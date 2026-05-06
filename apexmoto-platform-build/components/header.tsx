@@ -20,6 +20,7 @@ export function Header() {
   const { play } = useSound()
 
   const navItems = [
+    { label: "Experience", href: "/experience" },
     { label: "Shop", href: "#products" },
     { label: "Brakes", href: "#products?category=Brakes" },
     { label: "Engine", href: "#products?category=Engine" },
@@ -54,6 +55,7 @@ export function Header() {
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center gap-8">
               {[
+                { label: "EXPERIENCE", href: "/experience" },
                 { label: "SHOP", href: "#products" },
                 { label: "BUILDER", href: "#builder" },
                 { label: "MECHANICS", href: "#mechanics" },
