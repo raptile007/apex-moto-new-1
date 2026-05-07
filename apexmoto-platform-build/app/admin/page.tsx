@@ -22,7 +22,13 @@ import {
   DollarSign,
   AlertTriangle,
   Check,
-  X
+  X,
+  Clock,
+  Truck,
+  CheckCircle2,
+  Box,
+  Eye,
+  Copy
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -43,10 +49,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useStore } from "@/lib/store"
-import { type Product, type Shop } from "@/lib/data"
+import { type Product, type Shop, type Order, type OrderStatus } from "@/lib/data"
 import { toast } from "sonner"
 
-type Tab = "overview" | "products" | "shops" | "residents"
+type Tab = "overview" | "products" | "orders" | "shops" | "residents"
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>("overview")
@@ -55,6 +61,7 @@ export default function AdminPage() {
   const tabs = [
     { id: "overview" as Tab, label: "Overview", icon: BarChart3 },
     { id: "products" as Tab, label: "Products", icon: Package },
+    { id: "orders" as Tab, label: "Orders", icon: Truck },
     { id: "shops" as Tab, label: "Shops", icon: MapPin },
     { id: "residents" as Tab, label: "Residents", icon: Users },
   ]
@@ -131,6 +138,7 @@ export default function AdminPage() {
         <AnimatePresence mode="wait">
           {activeTab === "overview" && <OverviewTab key="overview" />}
           {activeTab === "products" && <ProductsTab key="products" searchQuery={searchQuery} />}
+          {activeTab === "orders" && <OrdersTab key="orders" searchQuery={searchQuery} />}
           {activeTab === "shops" && <ShopsTab key="shops" searchQuery={searchQuery} />}
           {activeTab === "residents" && <ResidentsTab key="residents" searchQuery={searchQuery} />}
         </AnimatePresence>
@@ -1082,6 +1090,286 @@ function ResidentsTab({ searchQuery }: { searchQuery: string }) {
           </motion.div>
         ))}
       </div>
+    </motion.div>
+  )
+}
+
+// Status configuration for orders
+const orderStatusConfig: Record<OrderStatus, { label: string; color: string; icon: React.ElementType; bgColor: string }> = {
+  pending: { label: "Pending", color: "text-yellow-500", icon: Clock, bgColor: "bg-yellow-500/10" },
+  confirmed: { label: "Confirmed", color: "text-blue-500", icon: CheckCircle2, bgColor: "bg-blue-500/10" },
+  processing: { label: "Processing", color: "text-purple-500", icon: Box, bgColor: "bg-purple-500/10" },
+  shipped: { label: "Shipped", color: "text-cyan-500", icon: Truck, bgColor: "bg-cyan-500/10" },
+  out_for_delivery: { label: "Out for Delivery", color: "text-orange-500", icon: Truck, bgColor: "bg-orange-500/10" },
+  delivered: { label: "Delivered", color: "text-green-500", icon: CheckCircle2, bgColor: "bg-green-500/10" },
+  cancelled: { label: "Cancelled", color: "text-red-500", icon: X, bgColor: "bg-red-500/10" },
+}
+
+function OrdersTab({ searchQuery }: { searchQuery: string }) {
+  const { orders, updateOrderStatus } = useStore()
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [newStatus, setNewStatus] = useState<OrderStatus | "">("")
+  const [trackingNumber, setTrackingNumber] = useState("")
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all")
+
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          order.customerName.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesStatus = statusFilter === "all" || order.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
+
+  const handleUpdateStatus = () => {
+    if (selectedOrder && newStatus) {
+      updateOrderStatus(selectedOrder.id, newStatus, trackingNumber || undefined)
+      toast.success(`Order ${selectedOrder.orderNumber} updated to ${orderStatusConfig[newStatus].label}`)
+      setSelectedOrder(null)
+      setNewStatus("")
+      setTrackingNumber("")
+    }
+  }
+
+  const copyOrderNumber = (orderNumber: string) => {
+    navigator.clipboard.writeText(orderNumber)
+    toast.success("Order number copied!")
+  }
+
+  const orderStats = {
+    total: orders.length,
+    pending: orders.filter(o => o.status === "pending" || o.status === "confirmed").length,
+    processing: orders.filter(o => o.status === "processing").length,
+    shipped: orders.filter(o => o.status === "shipped" || o.status === "out_for_delivery").length,
+    delivered: orders.filter(o => o.status === "delivered").length,
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="space-y-6"
+    >
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {[
+          { label: "Total Orders", value: orderStats.total, icon: Package, color: "text-white" },
+          { label: "Pending", value: orderStats.pending, icon: Clock, color: "text-yellow-500" },
+          { label: "Processing", value: orderStats.processing, icon: Box, color: "text-purple-500" },
+          { label: "Shipped", value: orderStats.shipped, icon: Truck, color: "text-cyan-500" },
+          { label: "Delivered", value: orderStats.delivered, icon: CheckCircle2, color: "text-green-500" },
+        ].map((stat) => (
+          <Card key={stat.label} className="bg-white/5 border-white/10">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                <div>
+                  <p className="text-2xl font-display font-black italic">{stat.value}</p>
+                  <p className="text-[9px] font-black tracking-widest text-neutral-500 uppercase">{stat.label}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Header & Filters */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-display font-black italic uppercase tracking-tighter">Order <span className="text-apex-orange">Management</span></h2>
+          <p className="text-[10px] font-black tracking-[0.2em] text-neutral-500 uppercase mt-1">{filteredOrders.length} ORDERS FOUND</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as OrderStatus | "all")}>
+            <SelectTrigger className="w-40 h-11 bg-white/5 border-white/10 rounded-xl text-[10px] font-black tracking-widest uppercase">
+              <SelectValue placeholder="Filter Status" />
+            </SelectTrigger>
+            <SelectContent className="bg-[#0a0a0a] border-white/10">
+              <SelectItem value="all" className="text-[10px] font-black tracking-widest uppercase">All Status</SelectItem>
+              {Object.entries(orderStatusConfig).map(([key, config]) => (
+                <SelectItem key={key} value={key} className="text-[10px] font-black tracking-widest uppercase">
+                  {config.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Orders Table */}
+      <Card className="bg-white/5 border-white/10 overflow-hidden rounded-3xl">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-white/5 border-b border-white/5">
+              <tr>
+                <th className="text-left p-6 text-[10px] font-black tracking-widest text-neutral-500 uppercase">ORDER</th>
+                <th className="text-left p-6 text-[10px] font-black tracking-widest text-neutral-500 uppercase">CUSTOMER</th>
+                <th className="text-left p-6 text-[10px] font-black tracking-widest text-neutral-500 uppercase">ITEMS</th>
+                <th className="text-left p-6 text-[10px] font-black tracking-widest text-neutral-500 uppercase">TOTAL</th>
+                <th className="text-left p-6 text-[10px] font-black tracking-widest text-neutral-500 uppercase">STATUS</th>
+                <th className="text-left p-6 text-[10px] font-black tracking-widest text-neutral-500 uppercase">DATE</th>
+                <th className="text-right p-6 text-[10px] font-black tracking-widest text-neutral-500 uppercase">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              <AnimatePresence>
+                {filteredOrders.map((order, index) => {
+                  const statusConfig = orderStatusConfig[order.status]
+                  const StatusIcon = statusConfig.icon
+                  return (
+                    <motion.tr
+                      key={order.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ delay: index * 0.02 }}
+                      className="group hover:bg-white/5 transition-colors"
+                    >
+                      <td className="p-6">
+                        <div className="flex items-center gap-3">
+                          <button 
+                            onClick={() => copyOrderNumber(order.orderNumber)}
+                            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                          >
+                            <Copy className="w-3 h-3 text-neutral-500" />
+                          </button>
+                          <div>
+                            <p className="font-display font-black text-xs italic uppercase tracking-tight text-apex-orange">{order.orderNumber}</p>
+                            {order.trackingNumber && (
+                              <p className="text-[9px] font-mono text-neutral-500">{order.trackingNumber}</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-6">
+                        <div>
+                          <p className="font-bold text-sm text-white">{order.customerName}</p>
+                          <p className="text-[10px] text-neutral-500">{order.customerEmail}</p>
+                        </div>
+                      </td>
+                      <td className="p-6 text-sm text-neutral-300">
+                        {order.items.length} item{order.items.length > 1 ? "s" : ""}
+                      </td>
+                      <td className="p-6">
+                        <p className="font-display font-black text-sm italic text-white">${order.total.toFixed(2)}</p>
+                      </td>
+                      <td className="p-6">
+                        <Badge className={`font-black italic text-[9px] tracking-widest uppercase px-3 py-1 rounded-full ${statusConfig.bgColor} ${statusConfig.color} border-0`}>
+                          <StatusIcon className="w-3 h-3 mr-1" />
+                          {statusConfig.label}
+                        </Badge>
+                      </td>
+                      <td className="p-6 text-[10px] font-black tracking-widest text-neutral-500 uppercase">
+                        {new Date(order.createdAt).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </td>
+                      <td className="p-6">
+                        <div className="flex items-center justify-end gap-2">
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => {
+                              setSelectedOrder(order)
+                              setNewStatus(order.status)
+                              setTrackingNumber(order.trackingNumber || "")
+                            }}
+                            className="p-3 bg-apex-orange/10 rounded-xl transition-all border border-apex-orange/20 hover:bg-apex-orange/20"
+                            title="Update Status"
+                          >
+                            <Edit2 className="w-4 h-4 text-apex-orange" />
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => window.open(`/orders?order=${order.orderNumber}`, '_blank')}
+                            className="p-3 bg-white/5 rounded-xl transition-all border border-white/10 hover:bg-white/10"
+                            title="View Details"
+                          >
+                            <Eye className="w-4 h-4 text-neutral-400" />
+                          </motion.button>
+                        </div>
+                      </td>
+                    </motion.tr>
+                  )
+                })}
+              </AnimatePresence>
+            </tbody>
+          </table>
+        </div>
+      </Card>
+
+      {/* Update Status Dialog */}
+      <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+        <DialogContent className="bg-[#0a0a0a] border-white/10 rounded-3xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display font-black text-xl italic uppercase tracking-tighter">
+              Update Order <span className="text-apex-orange">{selectedOrder?.orderNumber}</span>
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            {/* Current Status */}
+            {selectedOrder && (
+              <div className="bg-white/5 rounded-2xl p-4">
+                <p className="text-[10px] font-black tracking-widest text-neutral-500 uppercase mb-2">CURRENT STATUS</p>
+                <Badge className={`${orderStatusConfig[selectedOrder.status].bgColor} ${orderStatusConfig[selectedOrder.status].color} border-0 text-xs font-black uppercase`}>
+                  {orderStatusConfig[selectedOrder.status].label}
+                </Badge>
+              </div>
+            )}
+
+            {/* New Status */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black tracking-widest text-neutral-500 uppercase">NEW STATUS</label>
+              <Select value={newStatus} onValueChange={(value) => setNewStatus(value as OrderStatus)}>
+                <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl">
+                  <SelectValue placeholder="Select new status" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#0a0a0a] border-white/10">
+                  {Object.entries(orderStatusConfig).map(([key, config]) => (
+                    <SelectItem key={key} value={key}>
+                      <div className="flex items-center gap-2">
+                        <config.icon className={`w-4 h-4 ${config.color}`} />
+                        <span>{config.label}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Tracking Number */}
+            <div className="space-y-2">
+              <label className="text-[10px] font-black tracking-widest text-neutral-500 uppercase">TRACKING NUMBER (Optional)</label>
+              <Input
+                value={trackingNumber}
+                onChange={(e) => setTrackingNumber(e.target.value)}
+                placeholder="Enter tracking number..."
+                className="h-12 bg-white/5 border-white/10 rounded-xl"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setSelectedOrder(null)}
+              className="flex-1 h-12 bg-white/5 border-white/10 hover:bg-white/10 rounded-xl font-black italic uppercase tracking-tighter"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateStatus}
+              disabled={!newStatus}
+              className="flex-1 h-12 bg-apex-orange hover:bg-apex-orange/90 rounded-xl font-black italic uppercase tracking-tighter shadow-[0_0_20px_rgba(255,77,0,0.3)]"
+            >
+              Update Status
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   )
 }

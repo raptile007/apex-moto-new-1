@@ -1,8 +1,8 @@
 export type Product = {
   id: string
   name: string
-  brand: "KTM" | "Honda" | "Yamaha" | "Bajaj" | "Royal Enfield" | string
-  category: "Brakes" | "Engine" | "Drive" | "Tyres"
+  brand: "KTM" | "Honda" | "Yamaha" | "Bajaj" | "Royal Enfield" | "Akrapovic" | "Yoshimura" | "SC-Project" | "Arrow" | "Termignoni" | "Ohlins" | "WP" | "Bitubo" | "Hyperpro" | "Andreani" | string
+  category: "Brakes" | "Engine" | "Drive" | "Tyres" | "Exhaust" | "Suspension" | "Electronics"
   price: number
   originalPrice?: number
   description: string
@@ -10,6 +10,7 @@ export type Product = {
   stock: number
   stockStatus: "In Stock" | "Low Stock" | "Backorder"
   specs: Record<string, string>
+  compatibleBrands?: string[] // For brand-based compatibility checking
 }
 
 export type Shop = {
@@ -421,4 +422,346 @@ export const shops: Shop[] = [
   }
 ]
 
+// Exhaust Systems
+export const exhaustProducts: Product[] = [
+  {
+    id: "exhaust-001",
+    name: "Akrapovic Evolution Line Full System",
+    brand: "Akrapovic",
+    category: "Exhaust",
+    price: 1899.99,
+    originalPrice: 2199.99,
+    description: "Race-developed titanium full exhaust system with carbon fiber end cap. Maximum power gains with unmistakable Akrapovic sound.",
+    image: "/parts/piston-kit.png",
+    stock: 6,
+    stockStatus: "In Stock",
+    specs: { "Material": "Titanium", "Weight Savings": "4.2kg", "Power Gain": "+8HP", "Certification": "EC Type Approved" },
+    compatibleBrands: ["KTM", "Yamaha", "Honda"]
+  },
+  {
+    id: "exhaust-002",
+    name: "Yoshimura Alpha T Slip-On",
+    brand: "Yoshimura",
+    category: "Exhaust",
+    price: 749.99,
+    description: "Signature Yoshimura slip-on with stainless steel construction and carbon fiber heat shield. Deep, aggressive tone.",
+    image: "/parts/crankshaft.png",
+    stock: 12,
+    stockStatus: "In Stock",
+    specs: { "Material": "Stainless Steel", "Weight Savings": "1.8kg", "Sound Level": "94dB", "Finish": "Carbon Fiber Cap" },
+    compatibleBrands: ["Honda", "Yamaha", "Bajaj"]
+  },
+  {
+    id: "exhaust-003",
+    name: "SC-Project CRT Full System",
+    brand: "SC-Project",
+    category: "Exhaust",
+    price: 2299.99,
+    description: "MotoGP-derived exhaust technology with twin silencer design. Extreme weight savings and maximum performance.",
+    image: "/parts/titanium-valves.png",
+    stock: 3,
+    stockStatus: "Low Stock",
+    specs: { "Material": "Titanium/Carbon", "Weight Savings": "5.1kg", "Power Gain": "+12HP", "Type": "Twin Silencer" },
+    compatibleBrands: ["KTM", "Yamaha"]
+  },
+  {
+    id: "exhaust-004",
+    name: "Arrow Race-Tech Silencer",
+    brand: "Arrow",
+    category: "Exhaust",
+    price: 599.99,
+    description: "Aluminum silencer with carbon end cap. Bolt-on performance upgrade with removable DB killer.",
+    image: "/parts/gasket-set.png",
+    stock: 18,
+    stockStatus: "In Stock",
+    specs: { "Material": "Aluminum", "Weight Savings": "1.2kg", "DB Killer": "Removable", "Length": "350mm" },
+    compatibleBrands: ["KTM", "Honda", "Bajaj", "Royal Enfield"]
+  },
+  {
+    id: "exhaust-005",
+    name: "Termignoni GP Style Full System",
+    brand: "Termignoni",
+    category: "Exhaust",
+    price: 1649.99,
+    description: "Italian craftsmanship with Ducati racing heritage. Full titanium construction with carbon fiber accents.",
+    image: "/parts/engine-oil.png",
+    stock: 0,
+    stockStatus: "Backorder",
+    specs: { "Material": "Titanium", "Weight Savings": "3.8kg", "Power Gain": "+6HP", "Origin": "Made in Italy" },
+    compatibleBrands: ["Honda", "Yamaha", "Royal Enfield"]
+  },
+]
+
+// Suspension Parts
+export const suspensionProducts: Product[] = [
+  {
+    id: "susp-001",
+    name: "Ohlins TTX GP Rear Shock",
+    brand: "Ohlins",
+    category: "Suspension",
+    price: 1499.99,
+    description: "World Superbike-spec rear shock with through-rod technology. Fully adjustable compression and rebound damping.",
+    image: "/parts/gold-chain.png",
+    stock: 4,
+    stockStatus: "In Stock",
+    specs: { "Type": "TTX Through-Rod", "Adjustments": "Full Comp/Reb", "Spring Rate": "Custom Available", "Reservoir": "Piggyback" },
+    compatibleBrands: ["KTM", "Yamaha", "Honda"]
+  },
+  {
+    id: "susp-002",
+    name: "WP XPLOR Pro Fork Cartridge Kit",
+    brand: "WP",
+    category: "Suspension",
+    price: 1199.99,
+    originalPrice: 1399.99,
+    description: "Factory KTM suspension technology for aftermarket. Split-function damping with easy adjustment.",
+    image: "/parts/sprocket-kit.png",
+    stock: 8,
+    stockStatus: "In Stock",
+    specs: { "Type": "Cartridge Kit", "Damping": "Split Function", "Adjustment": "Clicker Style", "Oil Capacity": "480ml/leg" },
+    compatibleBrands: ["KTM", "Bajaj"]
+  },
+  {
+    id: "susp-003",
+    name: "Bitubo WME Rear Shock",
+    brand: "Bitubo",
+    category: "Suspension",
+    price: 649.99,
+    description: "Italian-made rear shock with external reservoir. Hydraulic spring preload adjustment for easy setup.",
+    image: "/parts/brembo-caliper.png",
+    stock: 15,
+    stockStatus: "In Stock",
+    specs: { "Type": "Emulsion", "Preload": "Hydraulic", "Rebound": "12 Clicks", "Body": "Aluminum" },
+    compatibleBrands: ["Honda", "Yamaha", "Royal Enfield", "Bajaj"]
+  },
+  {
+    id: "susp-004",
+    name: "Hyperpro Progressive Fork Springs",
+    brand: "Hyperpro",
+    category: "Suspension",
+    price: 249.99,
+    description: "Rising-rate progressive springs for improved comfort and control. Drop-in replacement for stock springs.",
+    image: "/parts/wave-disc.png",
+    stock: 22,
+    stockStatus: "In Stock",
+    specs: { "Type": "Progressive Rate", "Material": "Chrome Silicon", "Finish": "Purple Powder Coat", "Includes": "Preload Spacers" },
+    compatibleBrands: ["KTM", "Honda", "Yamaha", "Bajaj", "Royal Enfield"]
+  },
+  {
+    id: "susp-005",
+    name: "Andreani Misano EVO Cartridge",
+    brand: "Andreani",
+    category: "Suspension",
+    price: 899.99,
+    description: "Professional-grade fork cartridge with 20-click compression and rebound adjustment. Race-proven performance.",
+    image: "/parts/brake-pads.png",
+    stock: 2,
+    stockStatus: "Low Stock",
+    specs: { "Type": "Pressurized Cartridge", "Compression": "20 Clicks", "Rebound": "20 Clicks", "Compatibility": "Most 41-43mm Forks" },
+    compatibleBrands: ["Honda", "Yamaha"]
+  },
+  {
+    id: "susp-006",
+    name: "Ohlins Road & Track Front Fork Kit",
+    brand: "Ohlins",
+    category: "Suspension",
+    price: 2199.99,
+    description: "Complete front fork assembly with NIX30 cartridges. The ultimate upgrade for serious riders.",
+    image: "/parts/dual-sport-tyre.png",
+    stock: 1,
+    stockStatus: "Low Stock",
+    specs: { "Type": "NIX30 Cartridge", "Diameter": "43mm", "Adjustments": "30 Comp/30 Reb", "Finish": "Gold Anodized" },
+    compatibleBrands: ["KTM", "Yamaha"]
+  },
+]
+
+// Combined products array including new categories
+export const allProducts: Product[] = [...products, ...exhaustProducts, ...suspensionProducts]
+
 export type CartItem = Product & { quantity: number }
+
+// Order tracking types
+export type OrderStatus = "pending" | "confirmed" | "processing" | "shipped" | "out_for_delivery" | "delivered" | "cancelled"
+
+export type OrderTimeline = {
+  status: OrderStatus
+  timestamp: string
+  description: string
+  location?: string
+}
+
+export type Order = {
+  id: string
+  orderNumber: string
+  customerId: string
+  customerName: string
+  customerEmail: string
+  customerPhone: string
+  items: CartItem[]
+  subtotal: number
+  shipping: number
+  tax: number
+  total: number
+  status: OrderStatus
+  timeline: OrderTimeline[]
+  shippingAddress: {
+    street: string
+    city: string
+    state: string
+    pincode: string
+    country: string
+  }
+  trackingNumber?: string
+  estimatedDelivery?: string
+  createdAt: string
+  updatedAt: string
+}
+
+// Sample orders for demo
+export const sampleOrders: Order[] = [
+  {
+    id: "order-001",
+    orderNumber: "APX-2024-001",
+    customerId: "cust-001",
+    customerName: "Rahul Sharma",
+    customerEmail: "rahul@example.com",
+    customerPhone: "+91 98765 43210",
+    items: [
+      { ...products[0], quantity: 2 },
+      { ...products[4], quantity: 1 },
+    ],
+    subtotal: 509.97,
+    shipping: 49.99,
+    tax: 91.79,
+    total: 651.75,
+    status: "shipped",
+    timeline: [
+      { status: "pending", timestamp: "2024-01-15T10:30:00Z", description: "Order placed successfully" },
+      { status: "confirmed", timestamp: "2024-01-15T11:00:00Z", description: "Payment confirmed" },
+      { status: "processing", timestamp: "2024-01-15T14:00:00Z", description: "Order is being prepared", location: "ApexMoto Warehouse, Mumbai" },
+      { status: "shipped", timestamp: "2024-01-16T09:00:00Z", description: "Package handed to courier", location: "Mumbai Hub" },
+    ],
+    shippingAddress: {
+      street: "123 MG Road, Andheri West",
+      city: "Mumbai",
+      state: "Maharashtra",
+      pincode: "400058",
+      country: "India"
+    },
+    trackingNumber: "APEX1234567890",
+    estimatedDelivery: "2024-01-19",
+    createdAt: "2024-01-15T10:30:00Z",
+    updatedAt: "2024-01-16T09:00:00Z"
+  },
+  {
+    id: "order-002",
+    orderNumber: "APX-2024-002",
+    customerId: "cust-002",
+    customerName: "Priya Patel",
+    customerEmail: "priya@example.com",
+    customerPhone: "+91 87654 32109",
+    items: [
+      { ...products[1], quantity: 1 },
+      { ...products[8], quantity: 1 },
+    ],
+    subtotal: 579.98,
+    shipping: 0,
+    tax: 104.40,
+    total: 684.38,
+    status: "delivered",
+    timeline: [
+      { status: "pending", timestamp: "2024-01-10T15:20:00Z", description: "Order placed successfully" },
+      { status: "confirmed", timestamp: "2024-01-10T15:45:00Z", description: "Payment confirmed" },
+      { status: "processing", timestamp: "2024-01-10T18:00:00Z", description: "Order is being prepared", location: "ApexMoto Warehouse, Delhi" },
+      { status: "shipped", timestamp: "2024-01-11T08:30:00Z", description: "Package handed to courier", location: "Delhi Hub" },
+      { status: "out_for_delivery", timestamp: "2024-01-13T07:00:00Z", description: "Out for delivery", location: "Bangalore Local Hub" },
+      { status: "delivered", timestamp: "2024-01-13T14:30:00Z", description: "Delivered successfully", location: "Bangalore" },
+    ],
+    shippingAddress: {
+      street: "456 Indiranagar, 100 Feet Road",
+      city: "Bangalore",
+      state: "Karnataka",
+      pincode: "560038",
+      country: "India"
+    },
+    trackingNumber: "APEX0987654321",
+    estimatedDelivery: "2024-01-13",
+    createdAt: "2024-01-10T15:20:00Z",
+    updatedAt: "2024-01-13T14:30:00Z"
+  },
+  {
+    id: "order-003",
+    orderNumber: "APX-2024-003",
+    customerId: "cust-003",
+    customerName: "Amit Kumar",
+    customerEmail: "amit@example.com",
+    customerPhone: "+91 76543 21098",
+    items: [
+      { ...products[6], quantity: 1 },
+    ],
+    subtotal: 899.99,
+    shipping: 99.99,
+    tax: 180.00,
+    total: 1179.98,
+    status: "processing",
+    timeline: [
+      { status: "pending", timestamp: "2024-01-18T09:00:00Z", description: "Order placed successfully" },
+      { status: "confirmed", timestamp: "2024-01-18T09:30:00Z", description: "Payment confirmed" },
+      { status: "processing", timestamp: "2024-01-18T12:00:00Z", description: "Order is being prepared", location: "ApexMoto Warehouse, Chennai" },
+    ],
+    shippingAddress: {
+      street: "789 T Nagar, South Usman Road",
+      city: "Chennai",
+      state: "Tamil Nadu",
+      pincode: "600017",
+      country: "India"
+    },
+    estimatedDelivery: "2024-01-22",
+    createdAt: "2024-01-18T09:00:00Z",
+    updatedAt: "2024-01-18T12:00:00Z"
+  }
+]
+
+// Brand compatibility groups for the compatibility checker
+export const brandCompatibilityGroups: Record<string, string[]> = {
+  "Performance Exhaust": ["Akrapovic", "Yoshimura", "SC-Project", "Arrow", "Termignoni"],
+  "Premium Suspension": ["Ohlins", "WP", "Bitubo", "Hyperpro", "Andreani"],
+  "OEM Parts": ["KTM", "Honda", "Yamaha", "Bajaj", "Royal Enfield"],
+}
+
+// Helper function to check if brands are compatible
+export function checkBrandCompatibility(items: CartItem[]): { isCompatible: boolean; warnings: string[] } {
+  const warnings: string[] = []
+  
+  // Get unique brands in cart
+  const brandsInCart = [...new Set(items.map(item => item.brand))]
+  
+  // Check if mixing performance exhaust brands
+  const exhaustBrands = brandsInCart.filter(b => brandCompatibilityGroups["Performance Exhaust"].includes(b))
+  if (exhaustBrands.length > 1) {
+    warnings.push(`Mixing exhaust brands (${exhaustBrands.join(", ")}) may cause fitment issues. We recommend sticking to one exhaust brand.`)
+  }
+  
+  // Check if mixing suspension brands
+  const suspensionBrands = brandsInCart.filter(b => brandCompatibilityGroups["Premium Suspension"].includes(b))
+  if (suspensionBrands.length > 1) {
+    warnings.push(`Mixing suspension brands (${suspensionBrands.join(", ")}) is not recommended. For optimal performance, use matching front/rear components.`)
+  }
+  
+  // Check if exhaust/suspension is compatible with OEM parts
+  const oemBrands = brandsInCart.filter(b => brandCompatibilityGroups["OEM Parts"].includes(b))
+  
+  items.forEach(item => {
+    if (item.compatibleBrands && item.compatibleBrands.length > 0) {
+      const hasCompatibleOEM = oemBrands.some(oem => item.compatibleBrands?.includes(oem))
+      if (oemBrands.length > 0 && !hasCompatibleOEM && (item.category === "Exhaust" || item.category === "Suspension")) {
+        warnings.push(`${item.name} may not be compatible with your selected ${oemBrands.join("/")} parts.`)
+      }
+    }
+  })
+  
+  return {
+    isCompatible: warnings.length === 0,
+    warnings
+  }
+}

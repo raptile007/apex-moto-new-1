@@ -1,13 +1,17 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
-import { X, Plus, Minus, ShoppingCart, Trash2 } from "lucide-react"
+import { X, Plus, Minus, ShoppingCart, Trash2, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useStore } from "@/lib/store"
 import { toast } from "sonner"
 import Image from "next/image"
+import { CompatibilityBanner } from "./compatibility-banner"
+import { useRouter } from "next/navigation"
+import type { Order } from "@/lib/data"
 
 export function CartDrawer() {
+  const router = useRouter()
   const { 
     cart, 
     isCartOpen, 
@@ -15,7 +19,9 @@ export function CartDrawer() {
     cartTotal, 
     removeFromCart, 
     updateCartQuantity,
-    clearCart
+    clearCart,
+    cartCompatibility,
+    addOrder
   } = useStore()
 
   const handleCheckout = () => {
@@ -23,11 +29,52 @@ export function CartDrawer() {
       toast.error("Your cart is empty")
       return
     }
+    
+    // Generate order
+    const orderNumber = `APX-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`
+    const shipping = cartTotal > 500 ? 0 : 49.99
+    const tax = cartTotal * 0.18
+    
+    const newOrder: Order = {
+      id: `order-${Date.now()}`,
+      orderNumber,
+      customerId: "guest-user",
+      customerName: "Guest Customer",
+      customerEmail: "guest@apexmoto.com",
+      customerPhone: "+91 00000 00000",
+      items: cart,
+      subtotal: cartTotal,
+      shipping,
+      tax,
+      total: cartTotal + shipping + tax,
+      status: "confirmed",
+      timeline: [
+        { status: "pending", timestamp: new Date(Date.now() - 60000).toISOString(), description: "Order placed successfully" },
+        { status: "confirmed", timestamp: new Date().toISOString(), description: "Payment confirmed" },
+      ],
+      shippingAddress: {
+        street: "Demo Address",
+        city: "Mumbai",
+        state: "Maharashtra",
+        pincode: "400001",
+        country: "India"
+      },
+      estimatedDelivery: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    
+    addOrder(newOrder)
+    
     toast.success("Order placed successfully!", {
-      description: `Total: $${cartTotal.toFixed(2)}`
+      description: `Order #${orderNumber} - Total: $${newOrder.total.toFixed(2)}`
     })
+    
     clearCart()
     setIsCartOpen(false)
+    
+    // Navigate to order tracking
+    router.push(`/orders?order=${orderNumber}`)
   }
 
   const handleRemoveItem = (id: string, name: string) => {
@@ -79,6 +126,14 @@ export function CartDrawer() {
 
             {/* Cart Items */}
             <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
+              {/* Compatibility Warning */}
+              {cart.length > 0 && (
+                <CompatibilityBanner 
+                  warnings={cartCompatibility.warnings} 
+                  isCompatible={cartCompatibility.isCompatible} 
+                />
+              )}
+              
               {cart.length === 0 ? (
                 <motion.div 
                   initial={{ opacity: 0, y: 20 }}

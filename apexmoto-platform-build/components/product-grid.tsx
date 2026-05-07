@@ -10,8 +10,8 @@ import { useState, useEffect } from "react"
 import { useSound } from "@/hooks/use-sound"
 import { SkeletonHUD } from "./skeleton-hud"
 
-const categories = ["Brakes", "Engine", "Drive", "Tyres"] as const
-const brands = ["KTM", "Honda", "Yamaha", "Bajaj"] as const
+const categories = ["Brakes", "Engine", "Drive", "Tyres", "Exhaust", "Suspension"] as const
+const brands = ["KTM", "Honda", "Yamaha", "Bajaj", "Akrapovic", "Yoshimura", "Ohlins", "WP"] as const
 
 export function ProductGrid() {
   const { 

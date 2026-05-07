@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react"
-import { products as initialProducts, shops as initialShops, type Product, type Shop, type CartItem } from "./data"
+import { allProducts as initialProducts, shops as initialShops, sampleOrders, checkBrandCompatibility, type Product, type Shop, type CartItem, type Order, type OrderStatus } from "./data"
 
 type StoreContextType = {
   // Products
@@ -48,9 +48,32 @@ type StoreContextType = {
   setSelectedProduct: (product: Product | null) => void
   selectedParts: Record<string, Product>
   setSelectedParts: (parts: Record<string, Product>) => void
+  
+  // Orders
+  orders: Order[]
+  addOrder: (order: Order) => void
+  updateOrderStatus: (orderId: string, status: OrderStatus, trackingNumber?: string) => void
+  getOrderByNumber: (orderNumber: string) => Order | undefined
+  
+  // Compatibility
+  cartCompatibility: { isCompatible: boolean; warnings: string[] }
 }
 
 const StoreContext = createContext<StoreContextType | null>(null)
+
+// Helper function for order status descriptions
+function getStatusDescription(status: OrderStatus): string {
+  const descriptions: Record<OrderStatus, string> = {
+    pending: "Order placed successfully",
+    confirmed: "Payment confirmed",
+    processing: "Order is being prepared",
+    shipped: "Package handed to courier",
+    out_for_delivery: "Out for delivery",
+    delivered: "Delivered successfully",
+    cancelled: "Order has been cancelled"
+  }
+  return descriptions[status]
+}
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   // Products state
@@ -75,6 +98,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [selectedParts, setSelectedParts] = useState<Record<string, Product>>({})
+  
+  // Orders state
+  const [orders, setOrders] = useState<Order[]>(sampleOrders)
   
   // Hydration from localStorage
   useEffect(() => {
@@ -181,6 +207,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0)
   
+  // Cart compatibility check
+  const cartCompatibility = checkBrandCompatibility(cart)
+  
+  // Order handlers
+  const addOrder = useCallback((order: Order) => {
+    setOrders(prev => [order, ...prev])
+  }, [])
+  
+  const updateOrderStatus = useCallback((orderId: string, status: OrderStatus, trackingNumber?: string) => {
+    setOrders(prev => prev.map(order => {
+      if (order.id === orderId) {
+        const newTimeline = [...order.timeline, {
+          status,
+          timestamp: new Date().toISOString(),
+          description: getStatusDescription(status),
+        }]
+        return { 
+          ...order, 
+          status, 
+          timeline: newTimeline,
+          trackingNumber: trackingNumber || order.trackingNumber,
+          updatedAt: new Date().toISOString()
+        }
+      }
+      return order
+    }))
+  }, [])
+  
+  const getOrderByNumber = useCallback((orderNumber: string) => {
+    return orders.find(o => o.orderNumber === orderNumber)
+  }, [orders])
+  
   // Wishlist handlers
   const toggleWishlist = useCallback((productId: string) => {
     setWishlist(prev => 
@@ -240,6 +298,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setSelectedProduct,
       selectedParts,
       setSelectedParts,
+      orders,
+      addOrder,
+      updateOrderStatus,
+      getOrderByNumber,
+      cartCompatibility,
     }}>
       {children}
     </StoreContext.Provider>

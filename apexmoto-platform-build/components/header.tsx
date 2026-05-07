@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, ShoppingCart, Heart, Menu, X, MapPin, User, Radio, Github } from "lucide-react"
+import { Search, ShoppingCart, Heart, Menu, X, MapPin, User, Radio, Github, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -58,6 +58,7 @@ export function Header() {
                 { label: "EXPERIENCE", href: "/experience" },
                 { label: "SHOP", href: "#products" },
                 { label: "BUILDER", href: "#builder" },
+                { label: "ORDERS", href: "/orders" },
                 { label: "MECHANICS", href: "#mechanics" },
               ].map((item, index) => (
                 <motion.a
@@ -98,6 +99,14 @@ export function Header() {
 
             {/* Actions */}
             <div className="flex items-center gap-4">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant="ghost" size="icon" className="relative text-white hover:bg-white/5 hover:text-apex-orange" asChild>
+                  <Link href="/orders">
+                    <Package className="w-5 h-5" />
+                  </Link>
+                </Button>
+              </motion.div>
+
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button variant="ghost" size="icon" className="relative text-white hover:bg-white/5 hover:text-apex-orange" asChild>
                   <Link href="#mechanics">

@@ -109,7 +109,7 @@ export function ProductCard({ product, index }: ProductCardProps) {
 
           {/* Product Image */}
           <motion.div 
-            className="w-full h-full"
+            className="relative w-full h-full"
             whileHover={{ scale: 1.1, rotate: -2 }}
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           >
@@ -117,7 +117,7 @@ export function ProductCard({ product, index }: ProductCardProps) {
               src={product.image} 
               alt={product.name}
               fill
-              className="w-full h-full object-cover group-hover:opacity-60 transition-opacity duration-500"
+              className="object-cover group-hover:opacity-60 transition-opacity duration-500"
             />
           </motion.div>
 
