@@ -21,16 +21,13 @@ export function ProductCard({ product, index }: ProductCardProps) {
   const inWishlist = isInWishlist(product.id)
 
   const handleAddToCart = () => {
+    // Prevent adding backorder items
     if (product.stockStatus === "Backorder") {
-      play('beep')
-      toast.info(`${product.name} is on backorder`, {
-        description: "Unit will ship once production batch is ready."
-      })
-    } else {
-      addToCart(product)
-      play('success')
-      toast.success(`${product.name} added to cart`)
+      return
     }
+    addToCart(product)
+    play('success')
+    toast.success(`${product.name} added to cart`)
   }
 
   const handleToggleWishlist = () => {

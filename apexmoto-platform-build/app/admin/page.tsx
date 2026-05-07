@@ -228,8 +228,8 @@ function OverviewTab() {
               {lowStockProducts.map((product) => (
                 <div key={product.id} className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center overflow-hidden">
-                      <Image src={product.image} alt="" fill className="w-full h-full object-cover opacity-50" />
+                    <div className="relative w-12 h-12 bg-white/5 rounded-xl overflow-hidden">
+                      <Image src={product.image} alt="" fill className="object-cover opacity-50" />
                     </div>
                     <div>
                       <p className="font-display font-black text-xs italic uppercase tracking-tight">{product.name}</p>
@@ -351,8 +351,8 @@ function ProductsTab({ searchQuery }: { searchQuery: string }) {
                   >
                     <td className="p-6">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center overflow-hidden border border-white/10">
-                          <Image src={product.image} alt="" fill className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        <div className="relative w-12 h-12 bg-white/5 rounded-xl overflow-hidden border border-white/10">
+                          <Image src={product.image} alt="" fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
                         </div>
                         <div>
                           <p className="font-display font-black text-xs italic uppercase tracking-tight">{product.name}</p>

@@ -104,8 +104,8 @@ export function CartDrawer() {
                       className="flex gap-6 p-5 bg-white/5 rounded-3xl border border-white/5 group hover:bg-white/[0.08] transition-all"
                     >
                       {/* Product Image */}
-                      <div className="w-24 h-24 bg-neutral-900 rounded-2xl flex-shrink-0 flex items-center justify-center overflow-hidden border border-white/10">
-                        <Image src={item.image} alt={item.name} fill className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500" />
+                      <div className="relative w-24 h-24 bg-neutral-900 rounded-2xl flex-shrink-0 overflow-hidden border border-white/10">
+                        <Image src={item.image} alt={item.name} fill className="object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500" />
                       </div>
 
                       {/* Product Info */}
