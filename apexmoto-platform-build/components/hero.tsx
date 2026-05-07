@@ -82,6 +82,10 @@ export function Hero() {
             <Button variant="outline" size="lg" className="h-16 px-10 border-white/10 hover:bg-white/5 text-white rounded-none font-display font-bold italic text-lg tracking-tighter transition-all hover:border-apex-orange/50">
               CUSTOM BUILDER
             </Button>
+
+            <Button variant="outline" size="lg" className="h-16 px-10 border-white/10 hover:bg-white/5 text-white rounded-none font-display font-bold italic text-lg tracking-tighter transition-all hover:border-apex-orange/50" asChild>
+              <a href="/experience">LAUNCH EXPERIENCE</a>
+            </Button>
           </motion.div>
 
           {/* Quick Stats */}

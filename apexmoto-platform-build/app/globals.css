@@ -138,3 +138,12 @@
   animation: marquee 30s linear infinite;
 }
 
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scaleY(1); }
+  50% { opacity: 0.3; transform: scaleY(0.5); }
+}
+
+.animate-pulse-slow {
+  animation: pulse 2.2s ease-in-out infinite;
+}

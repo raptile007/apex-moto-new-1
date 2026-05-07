@@ -11,6 +11,21 @@ import { FeatureBanner } from "@/components/feature-banner"
 import { motion, useScroll, useSpring } from "framer-motion"
 import dynamic from "next/dynamic"
 
+const CinematicScrollExperience = dynamic(
+  () => import("@/components/cinematic-scroll-experience"),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="h-screen w-full bg-[#050505] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-apex-orange border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-white/50 font-display tracking-wider text-sm uppercase italic">Preparing Engine</p>
+        </div>
+      </div>
+    )
+  }
+)
+
 const ShopMap = dynamic(() => import("@/components/shop-map").then(mod => mod.ShopMap), { 
   ssr: false,
   loading: () => <div className="h-[700px] bg-white/5 animate-pulse rounded-[3rem]" />
@@ -34,7 +49,7 @@ export default function Home() {
       <Header />
       
       <main>
-        <Hero />
+        <CinematicScrollExperience />
         
         <section className="py-12 bg-white/[0.02] border-y border-white/5">
            <div className="max-w-7xl mx-auto px-4 overflow-hidden">

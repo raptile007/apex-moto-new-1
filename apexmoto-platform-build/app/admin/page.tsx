@@ -46,7 +46,7 @@ import { useStore } from "@/lib/store"
 import { type Product, type Shop } from "@/lib/data"
 import { toast } from "sonner"
 
-type Tab = "overview" | "products" | "shops"
+type Tab = "overview" | "products" | "shops" | "residents"
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>("overview")
@@ -56,6 +56,7 @@ export default function AdminPage() {
     { id: "overview" as Tab, label: "Overview", icon: BarChart3 },
     { id: "products" as Tab, label: "Products", icon: Package },
     { id: "shops" as Tab, label: "Shops", icon: MapPin },
+    { id: "residents" as Tab, label: "Residents", icon: Users },
   ]
 
   return (
@@ -131,6 +132,7 @@ export default function AdminPage() {
           {activeTab === "overview" && <OverviewTab key="overview" />}
           {activeTab === "products" && <ProductsTab key="products" searchQuery={searchQuery} />}
           {activeTab === "shops" && <ShopsTab key="shops" searchQuery={searchQuery} />}
+          {activeTab === "residents" && <ResidentsTab key="residents" searchQuery={searchQuery} />}
         </AnimatePresence>
       </div>
     </div>
@@ -770,19 +772,19 @@ function ShopsTab({ searchQuery }: { searchQuery: string }) {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm bg-[#0a0a0a] border-white/10 text-white rounded-3xl">
           <DialogHeader>
-            <DialogTitle>Delete Shop?</DialogTitle>
+            <DialogTitle className="font-display font-black italic uppercase tracking-tighter">Decommission Hub?</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-neutral-600">
-            This action cannot be undone. Are you sure you want to delete this shop location?
+          <p className="text-sm text-neutral-400 font-medium">
+            This action cannot be undone. Are you sure you want to remove this strategic hub from the global network?
           </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
-              Cancel
+          <DialogFooter className="gap-2 pt-4">
+            <Button variant="ghost" onClick={() => setDeleteConfirm(null)} className="text-neutral-400 hover:text-white">
+              ABORT
             </Button>
-            <Button variant="destructive" onClick={() => handleDeleteShop(deleteConfirm!)}>
-              Delete
+            <Button variant="destructive" onClick={() => handleDeleteShop(deleteConfirm!)} className="bg-red-500 hover:bg-red-600 text-white font-black italic uppercase tracking-tighter rounded-xl">
+              CONFIRM_DELETE
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -991,5 +993,95 @@ function ShopDialog({
         </form>
       </DialogContent>
     </Dialog>
+  )
+}
+
+// ── RESIDENTS TAB ─────────────────────────────────────────────
+function ResidentsTab({ searchQuery }: { searchQuery: string }) {
+  const residents = [
+    { id: "r1", name: "Alex Vlasov", tier: "Elite", points: 12450, status: "Active", lastSeen: "2m ago", bio: "KTM RC390 Specialist" },
+    { id: "r2", name: "Sarah Chen", tier: "Pro", points: 8900, status: "Active", lastSeen: "15m ago", bio: "Enduro Performance Expert" },
+    { id: "r3", name: "Marcus Thorne", tier: "Master", points: 15200, status: "Active", lastSeen: "1h ago", bio: "Apex Moto Founder" },
+    { id: "r4", name: "Elena Rossi", tier: "Rookie", points: 2100, status: "Offline", lastSeen: "3d ago", bio: "Track Day Enthusiast" },
+    { id: "r5", name: "Jack Miller", tier: "Elite", points: 11200, status: "Suspended", lastSeen: "1w ago", bio: "High Octane Tester" },
+  ]
+
+  const filteredResidents = residents.filter(r => 
+    r.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.tier.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="space-y-6"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-display font-black italic uppercase tracking-tighter">Resident <span className="text-apex-orange">Dashboard</span></h2>
+          <p className="text-[10px] font-black tracking-[0.2em] text-neutral-500 uppercase mt-1">{residents.length} AUTHORIZED OPERATORS</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {filteredResidents.map((resident, index) => (
+          <motion.div
+            key={resident.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+          >
+            <Card className="bg-white/5 border-white/10 overflow-hidden hover:shadow-[0_0_30px_rgba(255,77,0,0.1)] transition-all group rounded-3xl">
+              <CardContent className="p-8 space-y-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-apex-orange/10 border border-apex-orange/20 rounded-2xl flex items-center justify-center">
+                      <Users className="w-7 h-7 text-apex-orange" />
+                    </div>
+                    <div>
+                      <h3 className="font-display font-black text-lg italic uppercase tracking-tight text-white group-hover:text-apex-orange transition-colors">{resident.name}</h3>
+                      <div className="flex items-center gap-2">
+                        <Badge className={`text-[8px] font-black tracking-widest uppercase px-2 py-0.5 rounded-full ${
+                          resident.tier === "Elite" ? "bg-amber-500/20 text-amber-500 border-amber-500/20" :
+                          resident.tier === "Master" ? "bg-purple-500/20 text-purple-500 border-purple-500/20" :
+                          "bg-blue-500/20 text-blue-500 border-blue-500/20"
+                        }`}>
+                          {resident.tier} TIER
+                        </Badge>
+                        <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">{resident.points} PTS</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge variant="outline" className={`text-[8px] font-black tracking-widest uppercase px-3 py-1 rounded-full border-white/10 ${
+                      resident.status === "Active" ? "text-emerald-500 border-emerald-500/20 bg-emerald-500/5" :
+                      resident.status === "Suspended" ? "text-red-500 border-red-500/20 bg-red-500/5" :
+                      "text-neutral-500"
+                    }`}>
+                      {resident.status}
+                    </Badge>
+                  </div>
+                </div>
+
+                <p className="text-[10px] text-neutral-400 font-bold leading-relaxed border-l-2 border-apex-orange/30 pl-4 italic">
+                  "{resident.bio}"
+                </p>
+
+                <div className="pt-6 border-t border-white/5 flex items-center justify-between">
+                  <div className="text-[9px] font-black tracking-widest uppercase text-neutral-600">
+                    LAST_SYNC: {resident.lastSeen}
+                  </div>
+                  <Button variant="ghost" size="sm" className="h-8 px-4 text-[9px] font-black tracking-widest uppercase text-neutral-400 hover:text-white hover:bg-white/5">
+                    VIEW DATA
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+    </motion.div>
   )
 }
