@@ -80,7 +80,7 @@ export function CheckoutModal() {
       updatedAt: new Date().toISOString()
     }
     
-    addOrder(newOrder)
+    await addOrder(newOrder)
     setIsProcessing(false)
     setIsCheckoutModalOpen(false)
     clearCart()

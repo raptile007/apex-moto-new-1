@@ -272,8 +272,8 @@ export function BikeBuilder() {
                     </Button>
                     <Button 
                       variant="outline"
-                      onClick={() => {
-                        saveToGarage(`${selectedBike.name}_Custom_${Math.floor(Math.random()*1000)}`, selectedBike, selectedParts)
+                      onClick={async () => {
+                        await saveToGarage(`${selectedBike.name}_Custom_${Math.floor(Math.random()*1000)}`, selectedBike, selectedParts)
                         play('success')
                         toast.success("Saved to Garage", {
                           description: "Your configuration is now available in your Virtual Garage collection."

@@ -118,14 +118,14 @@ function OrderCard({ order, isExpanded, onToggle }: { order: Order; isExpanded: 
           <div className="text-left">
             <div className="flex items-center gap-3 mb-1">
               <h3 className="font-display font-black text-lg italic uppercase tracking-tight text-white">
-                {order.orderNumber}
+                {order.orderNumber || 'UNASSIGNED'}
               </h3>
               <Badge className={`${config.bgColor} ${config.color} border-0 text-[10px] font-black uppercase`}>
                 {config.label}
               </Badge>
             </div>
             <p className="text-sm text-neutral-500">
-              {order.items.length} item{order.items.length > 1 ? "s" : ""} - ${order.total.toFixed(2)}
+              {(order.items?.length || 0)} item{(order.items?.length || 0) !== 1 ? "s" : ""} - ${(order.total || 0).toFixed(2)}
             </p>
           </div>
         </div>
@@ -194,18 +194,28 @@ function OrderCard({ order, isExpanded, onToggle }: { order: Order; isExpanded: 
               <div>
                 <h4 className="text-[10px] font-black tracking-widest text-neutral-500 uppercase mb-4">ORDER_ITEMS</h4>
                 <div className="space-y-3">
-                  {order.items.map((item) => (
+                  {order.items && order.items.length > 0 ? order.items.map((item) => (
                     <div key={item.id} className="flex items-center gap-4 p-3 bg-white/5 rounded-xl">
                       <div className="relative w-16 h-16 bg-neutral-900 rounded-xl overflow-hidden">
-                        <Image src={item.image} alt={item.name} fill className="object-cover" />
+                        {item.image ? (
+                          <Image src={item.image} alt={item.name} fill className="object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-neutral-600">
+                            <Package className="w-6 h-6" />
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h5 className="font-bold text-sm text-white truncate">{item.name}</h5>
-                        <p className="text-xs text-neutral-500">{item.brand} - Qty: {item.quantity}</p>
+                        <h5 className="font-bold text-sm text-white truncate">{item.name || 'Unknown Part'}</h5>
+                        <p className="text-xs text-neutral-500">{item.brand || 'ApexMoto'} - Qty: {item.quantity || 1}</p>
                       </div>
-                      <p className="font-bold text-white">${(item.price * item.quantity).toFixed(2)}</p>
+                      <p className="font-bold text-white">${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</p>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="p-4 border border-dashed border-white/10 rounded-xl text-center text-neutral-500 text-xs uppercase tracking-widest">
+                      No item details available
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -233,19 +243,19 @@ function OrderCard({ order, isExpanded, onToggle }: { order: Order; isExpanded: 
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between text-neutral-400">
                       <span>Subtotal</span>
-                      <span>${order.subtotal.toFixed(2)}</span>
+                      <span>${(order.subtotal || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-neutral-400">
                       <span>Shipping</span>
-                      <span>{order.shipping === 0 ? 'FREE' : `$${order.shipping.toFixed(2)}`}</span>
+                      <span>{order.shipping === 0 ? 'FREE' : `$${(order.shipping || 0).toFixed(2)}`}</span>
                     </div>
                     <div className="flex justify-between text-neutral-400">
                       <span>Tax (18% GST)</span>
-                      <span>${order.tax.toFixed(2)}</span>
+                      <span>${(order.tax || 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-white font-bold text-lg pt-2 border-t border-white/10">
                       <span>Total</span>
-                      <span className="text-apex-orange">${order.total.toFixed(2)}</span>
+                      <span className="text-apex-orange">${(order.total || 0).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
@@ -255,8 +265,8 @@ function OrderCard({ order, isExpanded, onToggle }: { order: Order; isExpanded: 
               <div>
                 <h4 className="text-[10px] font-black tracking-widest text-neutral-500 uppercase mb-4">ACTIVITY_LOG</h4>
                 <div className="space-y-3">
-                  {order.timeline.slice().reverse().map((event, index) => {
-                    const eventConfig = statusConfig[event.status]
+                  {order.timeline && order.timeline.length > 0 ? order.timeline.slice().reverse().map((event, index) => {
+                    const eventConfig = statusConfig[event.status] || statusConfig.pending
                     const EventIcon = eventConfig.icon
                     return (
                       <div key={index} className="flex items-start gap-4">
@@ -264,21 +274,23 @@ function OrderCard({ order, isExpanded, onToggle }: { order: Order; isExpanded: 
                           <EventIcon className={`w-4 h-4 ${eventConfig.color}`} />
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm text-white">{event.description}</p>
+                          <p className="text-sm text-white">{event.description || 'Status update received'}</p>
                           <p className="text-xs text-neutral-500">
-                            {new Date(event.timestamp).toLocaleString('en-IN', {
+                            {event.timestamp ? new Date(event.timestamp).toLocaleString('en-IN', {
                               day: 'numeric',
                               month: 'short',
                               year: 'numeric',
                               hour: '2-digit',
                               minute: '2-digit'
-                            })}
+                            }) : 'Just now'}
                             {event.location && ` - ${event.location}`}
                           </p>
                         </div>
                       </div>
                     )
-                  })}
+                  }) : (
+                    <p className="text-xs text-neutral-600 italic uppercase tracking-widest px-2">No activity recorded</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -292,7 +304,7 @@ function OrderCard({ order, isExpanded, onToggle }: { order: Order; isExpanded: 
 function OrdersContent() {
   const searchParams = useSearchParams()
   const highlightedOrder = searchParams.get('order')
-  const { orders } = useStore()
+  const { orders, isLoading } = useStore()
   const [expandedOrder, setExpandedOrder] = useState<string | null>(highlightedOrder)
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -302,10 +314,12 @@ function OrdersContent() {
     }
   }, [highlightedOrder])
 
-  const filteredOrders = orders.filter(order => 
-    order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    order.customerName.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filteredOrders = orders.filter(order => {
+    const orderNum = (order.orderNumber || "").toLowerCase()
+    const custName = (order.customerName || "").toLowerCase()
+    const query = searchQuery.toLowerCase()
+    return orderNum.includes(query) || custName.includes(query)
+  })
 
   return (
     <div className="min-h-screen bg-[#050505]">
@@ -350,7 +364,13 @@ function OrdersContent() {
           </motion.div>
 
           {/* Orders List */}
-          {filteredOrders.length > 0 ? (
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-24 bg-white/5 border border-white/10 rounded-3xl animate-pulse" />
+              ))}
+            </div>
+          ) : filteredOrders.length > 0 ? (
             <div className="space-y-4">
               {filteredOrders.map((order, index) => (
                 <motion.div

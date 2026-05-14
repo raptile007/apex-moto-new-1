@@ -10,22 +10,33 @@ export function CustomCursor() {
   const [cursorState, setCursorState] = useState<CursorState>("default");
   const [cursorLabel, setCursorLabel] = useState<string | null>(null);
   const [isClicking, setIsClicking] = useState(false);
-  const trailPoints = useRef<Array<{ x: number; y: number }>>([]);
+
 
   // Primary cursor position (fast, raw)
   const rawX = useMotionValue(-200);
   const rawY = useMotionValue(-200);
 
-  // Main cursor — tight spring for snappy feel
-  const cursorXSpring = useSpring(rawX, { damping: 30, stiffness: 500 });
-  const cursorYSpring = useSpring(rawY, { damping: 30, stiffness: 500 });
+  // Main cursor — snappy but stable
+  const cursorXSpring = useSpring(rawX, { damping: 35, stiffness: 400 });
+  const cursorYSpring = useSpring(rawY, { damping: 35, stiffness: 400 });
 
-  // Trailing aura — very loose spring for ghost lag
-  const auraXSpring = useSpring(rawX, { damping: 20, stiffness: 80 });
-  const auraYSpring = useSpring(rawY, { damping: 20, stiffness: 80 });
+  // Trailing aura — smoother lag
+  const auraXSpring = useSpring(rawX, { damping: 30, stiffness: 60 });
+  const auraYSpring = useSpring(rawY, { damping: 30, stiffness: 60 });
 
   useEffect(() => {
     setIsMounted(true);
+
+    const checkCapabilities = () => {
+      const isDesktop = window.matchMedia("(min-width: 768px)").matches;
+      const hasMouse = window.matchMedia("(pointer: fine)").matches;
+      
+      if (isDesktop && hasMouse) {
+        document.documentElement.style.cursor = "none";
+      } else {
+        document.documentElement.style.cursor = "auto";
+      }
+    };
 
     const moveCursor = (e: MouseEvent) => {
       rawX.set(e.clientX);
@@ -34,11 +45,14 @@ export function CustomCursor() {
 
     const handleMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      const interactive = target.closest("button, a, [data-cursor], input, textarea");
+      if (!target) return;
+
+      const interactive = target.closest("button, a, [data-cursor], input, textarea, select, [role='button'], .cursor-pointer");
+
       if (interactive) {
         setCursorState("hover");
-        const label = interactive.getAttribute("data-cursor");
-        setCursorLabel(label);
+        const label = interactive?.getAttribute("data-cursor");
+        setCursorLabel(label || null);
       } else {
         setCursorState("default");
         setCursorLabel(null);
@@ -52,16 +66,17 @@ export function CustomCursor() {
     window.addEventListener("mouseover", handleMouseOver);
     window.addEventListener("mousedown", handleMouseDown);
     window.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("resize", checkCapabilities);
 
-    // Hide native cursor globally
-    document.documentElement.style.cursor = "none";
+    checkCapabilities();
 
     return () => {
       window.removeEventListener("mousemove", moveCursor);
       window.removeEventListener("mouseover", handleMouseOver);
       window.removeEventListener("mousedown", handleMouseDown);
       window.removeEventListener("mouseup", handleMouseUp);
-      document.documentElement.style.cursor = "";
+      window.removeEventListener("resize", checkCapabilities);
+      document.documentElement.style.cursor = "auto";
     };
   }, [rawX, rawY]);
 
@@ -70,11 +85,10 @@ export function CustomCursor() {
   const isHovering = cursorState === "hover";
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-[99998] hidden md:block">
-
-      {/* === LAYER 1: Trailing aura blob (slowest) === */}
+    <>
+      {/* === LAYER 1: Trailing aura blob === */}
       <motion.div
-        className="absolute rounded-full"
+        className="fixed pointer-events-none z-[99998] hidden md:block rounded-full"
         animate={{
           width: isHovering ? 80 : 48,
           height: isHovering ? 80 : 48,
@@ -83,20 +97,20 @@ export function CustomCursor() {
         }}
         transition={{ duration: 0.35, ease: "easeOut" }}
         style={{
-          x: auraXSpring,
-          y: auraYSpring,
+          left: auraXSpring,
+          top: auraYSpring,
           translateX: "-50%",
           translateY: "-50%",
           filter: "blur(12px)",
         }}
       />
 
-      {/* === LAYER 2: Outer tactical ring (medium) === */}
+      {/* === LAYER 2: Outer tactical ring === */}
       <motion.div
-        className="absolute border rounded-full"
+        className="fixed border rounded-full pointer-events-none z-[99998] hidden md:block"
         style={{
-          x: cursorXSpring,
-          y: cursorYSpring,
+          left: cursorXSpring,
+          top: cursorYSpring,
           translateX: "-50%",
           translateY: "-50%",
         }}
@@ -105,18 +119,18 @@ export function CustomCursor() {
           height: isHovering ? 52 : 32,
           borderColor: isHovering ? "rgba(255,77,0,0.8)" : "rgba(255,255,255,0.35)",
           borderWidth: isHovering ? 1.5 : 1,
-          scale: isClicking ? 0.75 : 1,
+          scale: isClicking ? 0.85 : 1,
           rotate: isHovering ? 45 : 0,
         }}
         transition={{ duration: 0.2, ease: "easeOut" }}
       />
 
-      {/* === LAYER 3: Inner precision dot (fastest, raw speed) === */}
+      {/* === LAYER 3: Inner precision dot === */}
       <motion.div
-        className="absolute rounded-full bg-white"
+        className="fixed rounded-full bg-white pointer-events-none z-[99998] hidden md:block"
         style={{
-          x: cursorXSpring,
-          y: cursorYSpring,
+          left: cursorXSpring,
+          top: cursorYSpring,
           translateX: "-50%",
           translateY: "-50%",
         }}
@@ -124,7 +138,7 @@ export function CustomCursor() {
           width: isHovering ? 6 : 5,
           height: isHovering ? 6 : 5,
           backgroundColor: isHovering ? "#ff4d00" : "#ffffff",
-          scale: isClicking ? 0.5 : 1,
+          scale: isClicking ? 0.6 : 1,
           boxShadow: isHovering
             ? "0 0 10px 2px rgba(255,77,0,0.9)"
             : "0 0 6px 1px rgba(255,255,255,0.6)",
@@ -132,23 +146,22 @@ export function CustomCursor() {
         transition={{ duration: 0.15 }}
       />
 
-      {/* === LAYER 4: Corner ticks on hover (tactical crosshair) === */}
+      {/* === LAYER 4: Corner ticks === */}
       <AnimatePresence>
-        {isHovering && (
+        {isHovering && !isClicking && (
           <>
-            {/* top-left, top-right, bottom-left, bottom-right ticks */}
             {[
-              { tx: -20, ty: -20, rx: 0, ry: 0 },
-              { tx: 12, ty: -20, rx: 0, ry: 0 },
-              { tx: -20, ty: 12, rx: 0, ry: 0 },
-              { tx: 12, ty: 12, rx: 0, ry: 0 },
+              { tx: -20, ty: -20 },
+              { tx: 12, ty: -20 },
+              { tx: -20, ty: 12 },
+              { tx: 12, ty: 12 },
             ].map((pos, i) => (
               <motion.div
                 key={i}
-                className="absolute"
+                className="fixed pointer-events-none z-[99998] hidden md:block"
                 style={{
-                  x: cursorXSpring,
-                  y: cursorYSpring,
+                  left: cursorXSpring,
+                  top: cursorYSpring,
                   translateX: `calc(-50% + ${pos.tx}px)`,
                   translateY: `calc(-50% + ${pos.ty}px)`,
                 }}
@@ -171,11 +184,11 @@ export function CustomCursor() {
       <AnimatePresence>
         {cursorLabel && (
           <motion.div
-            className="absolute"
+            className="fixed pointer-events-none z-[99998] hidden md:block"
             style={{
-              x: cursorXSpring,
-              y: cursorYSpring,
-              translateX: "calc(-50%)",
+              left: cursorXSpring,
+              top: cursorYSpring,
+              translateX: "-50%",
               translateY: "calc(-50% - 40px)",
             }}
             initial={{ opacity: 0, y: 8 }}
@@ -189,6 +202,6 @@ export function CustomCursor() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </>
   );
 }

@@ -51,10 +51,11 @@ function MapSync({ selectedShop, shops }: { selectedShop: string | null, shops: 
 }
 
 export function ShopMap() {
-  const { shops } = useStore()
+  const { shops, addBooking } = useStore()
   const [selectedShop, setSelectedShop] = useState<string | null>(null)
   const [bookingShop, setBookingShop] = useState<any | null>(null)
   const [bookingDate, setBookingDate] = useState<Date | undefined>(new Date())
+  const [selectedService, setSelectedService] = useState("General Service")
   const [isClient, setIsClient] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
@@ -204,7 +205,7 @@ export function ShopMap() {
                   </div>
 
                   <div className="flex flex-wrap gap-1.5 mt-5">
-                    {shop.services.slice(0, 3).map((service) => (
+                    {shop.services.map((service) => (
                       <span 
                         key={service} 
                         className="text-[9px] font-black uppercase tracking-widest text-white/50 bg-white/5 px-2 py-1 rounded-md border border-white/5"
@@ -355,7 +356,7 @@ export function ShopMap() {
           <div className="p-8 space-y-6 max-h-[80vh] overflow-y-auto custom-scrollbar">
              <div className="space-y-4">
                 <label className="text-[10px] font-black tracking-widest text-neutral-500 uppercase">1. SELECT SERVICE</label>
-                <Select defaultValue="General Service">
+                <Select value={selectedService} onValueChange={setSelectedService}>
                    <SelectTrigger className="h-14 bg-white/5 border-white/10 rounded-2xl font-bold">
                       <SelectValue />
                    </SelectTrigger>
@@ -381,8 +382,20 @@ export function ShopMap() {
              <DialogFooter className="pt-4 sm:justify-start">
                 <Button 
                    className="w-full h-14 bg-apex-orange hover:bg-apex-orange/90 text-white font-black italic uppercase tracking-tighter text-base rounded-2xl shadow-[0_0_30px_rgba(255,77,0,0.3)]"
-                   onClick={() => {
+                   onClick={async () => {
                       const bpId = Math.random().toString(36).substring(2, 8).toUpperCase()
+                      
+                      const newBooking = {
+                        id: `BK-${Date.now()}`,
+                        shopId: bookingShop.id,
+                        shopName: bookingShop.name,
+                        service: selectedService,
+                        date: bookingDate?.toISOString() || new Date().toISOString(),
+                        status: "pending"
+                      };
+
+                      await addBooking(newBooking);
+
                       toast.success("TECHNICAL_SERVICE_INITIALIZED", {
                          description: `[BLUEPRINT_ID: APEX_${bpId}] Service for ${bookingShop?.name} confirmed on ${bookingDate?.toLocaleDateString()}. Data synchronized with Lead Engineer.`
                       })

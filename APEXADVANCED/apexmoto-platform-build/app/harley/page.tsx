@@ -6,6 +6,7 @@ import { ArrowRight, Zap, Shield, Gauge, ChevronDown, Star, Crown } from "lucide
 import Link from "next/link";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import HarleyLoading from "./loading";
 
 // ── Animated Counter ─────────────────────────────────────────────────────────
 function Counter({ to, suffix = "" }: { to: number; suffix?: string }) {
@@ -44,6 +45,105 @@ const STATS = [
 
 const MODELS = ["SPORTSTER S", "PAN AMERICA 1250", "ROAD GLIDE", "FAT BOY 114", "STREET BOB", "LOW RIDER S", "IRON 883", "HERITAGE CLASSIC"];
 
+// ── Blueprint HUD Overlay ──────────────────────────────────────────────────
+function BlueprintHUD() {
+  return (
+    <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+      {/* Scanning Line */}
+      <motion.div 
+        animate={{ x: ["-100%", "200%"] }}
+        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+        className="absolute inset-y-0 w-1 bg-gradient-to-b from-transparent via-[#d4af37] to-transparent opacity-50 shadow-[0_0_20px_rgba(212,175,55,0.8)]"
+      />
+
+      {/* Blueprint SVG (Stylized Outline) */}
+      <svg className="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="scanGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="transparent" />
+            <stop offset="50%" stopColor="#d4af37" />
+            <stop offset="100%" stopColor="transparent" />
+          </linearGradient>
+          <mask id="scanMask">
+             <motion.rect 
+               animate={{ x: [-1000, 2000] }}
+               transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+               width="600" height="1000" fill="white"
+             />
+          </mask>
+        </defs>
+        
+        {/* Simplified Bike Blueprint Paths */}
+        <g stroke="#d4af37" strokeWidth="0.5" fill="none" mask="url(#scanMask)">
+          {/* Frame */}
+          <path d="M200,450 L350,450 L450,300 L750,300 L850,450" strokeDasharray="5,5" />
+          {/* Engine Block */}
+          <rect x="400" y="320" width="120" height="100" rx="10" />
+          <circle cx="460" cy="370" r="30" strokeDasharray="2,2" />
+          {/* Wheels */}
+          <circle cx="250" cy="450" r="80" />
+          <circle cx="250" cy="450" r="70" strokeDasharray="10,5" />
+          <circle cx="750" cy="450" r="80" />
+          <circle cx="750" cy="450" r="70" strokeDasharray="10,5" />
+          {/* Handlebars */}
+          <path d="M400,280 L350,220 L300,230" />
+        </g>
+
+        {/* Tactical HUD Data Callouts */}
+        <g className="text-[8px] font-mono" fill="#d4af37" opacity="0.6">
+           <motion.g animate={{ opacity: [0, 1, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}>
+             <text x="380" y="310">ENGINE_SYNC: OPTIMAL</text>
+             <line x1="400" y1="315" x2="430" y2="340" stroke="#d4af37" strokeWidth="0.2" />
+           </motion.g>
+           <motion.g animate={{ opacity: [0, 1, 0] }} transition={{ duration: 2, repeat: Infinity, delay: 1.2 }}>
+             <text x="700" y="360">REAR_SUSPENSION: CALIBRATED</text>
+             <line x1="750" y1="365" x2="750" y2="400" stroke="#d4af37" strokeWidth="0.2" />
+           </motion.g>
+        </g>
+      </svg>
+
+      {/* Pulsing Hotspots */}
+      <div className="absolute top-[45%] left-[45%] pointer-events-auto">
+         <motion.div 
+           animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
+           transition={{ duration: 2, repeat: Infinity }}
+           className="w-3 h-3 bg-[#d4af37] rounded-full blur-[2px] cursor-help"
+         />
+      </div>
+    </div>
+  );
+}
+
+// ── Magnetic Wrapper ────────────────────────────────────────────────────────
+function Magnetic({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const { clientX, clientY } = e;
+    const { left, top, width, height } = ref.current?.getBoundingClientRect() || { left: 0, top: 0, width: 0, height: 0 };
+    const x = clientX - (left + width / 2);
+    const y = clientY - (top + height / 2);
+    setPosition({ x: x * 0.35, y: y * 0.35 });
+  };
+
+  const handleMouseLeave = () => {
+    setPosition({ x: 0, y: 0 });
+  };
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      animate={{ x: position.x, y: position.y }}
+      transition={{ type: "spring", stiffness: 150, damping: 15, mass: 0.1 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 export default function HarleyPage() {
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
@@ -58,6 +158,11 @@ export default function HarleyPage() {
 
   // UI Interactive State
   const [toast, setToast] = useState<{ message: string; type?: "success" | "info" } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(false);
+  }, []);
 
   const showToast = (message: string, type: "success" | "info" = "success") => {
     setToast({ message, type });
@@ -72,6 +177,20 @@ export default function HarleyPage() {
 
   return (
     <div className="min-h-screen bg-[#080500] text-white overflow-x-hidden">
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            key="loader"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0, scale: 1.1 }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed inset-0 z-[200]"
+          >
+            <HarleyLoading />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <Header />
 
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
@@ -93,6 +212,9 @@ export default function HarleyPage() {
           <div className="absolute inset-0 bg-gradient-to-b from-[#080500]/70 via-[#080500]/20 to-[#080500]" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#080500]/90 via-[#080500]/40 to-transparent" />
         </motion.div>
+
+        {/* Blueprint X-Ray Overlay */}
+        <BlueprintHUD />
 
         {/* Scanlines */}
         <div className="absolute inset-0 z-[1] pointer-events-none opacity-20"
@@ -137,22 +259,31 @@ export default function HarleyPage() {
             </motion.p>
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}
-              className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="#parts"
-                onClick={(e) => handleSmoothScroll(e, "parts")}
-                className="group inline-flex items-center gap-3 text-black font-display font-black italic uppercase tracking-wider px-10 py-4 transition-all duration-300 cursor-pointer"
-                style={{ background: "linear-gradient(135deg, #d4af37, #f5d87e, #d4af37)", boxShadow: "0 0 40px rgba(212,175,55,0.4)" }}>
-                Shop HD Parts
-                <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-              </a>
-              <a href="#models"
-                onClick={(e) => handleSmoothScroll(e, "models")}
-                className="inline-flex items-center gap-3 border text-white font-display font-bold italic uppercase tracking-wider px-10 py-4 transition-all duration-300 backdrop-blur-sm cursor-pointer"
-                style={{ borderColor: "rgba(212,175,55,0.4)" }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(212,175,55,0.9)")}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(212,175,55,0.4)")}>
-                View Models
-              </a>
+              className="mt-10 flex flex-col sm:flex-row gap-6 justify-center items-center">
+              <Magnetic>
+                <a href="#parts"
+                  onClick={(e) => handleSmoothScroll(e, "parts")}
+                  className="group relative inline-flex items-center gap-3 text-black font-display font-black italic uppercase tracking-wider px-10 py-5 transition-all duration-300 cursor-pointer overflow-hidden rounded-sm"
+                  style={{ background: "linear-gradient(135deg, #d4af37, #f5d87e, #d4af37)" }}>
+                  {/* Gold Leaf Glow */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-2xl bg-[#d4af37]/50 -z-10" />
+                  Shop HD Parts
+                  <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                </a>
+              </Magnetic>
+
+              <Magnetic>
+                <a href="#models"
+                  onClick={(e) => handleSmoothScroll(e, "models")}
+                  className="group relative inline-flex items-center gap-3 border text-white font-display font-bold italic uppercase tracking-wider px-10 py-5 transition-all duration-300 backdrop-blur-sm cursor-pointer rounded-sm"
+                  style={{ borderColor: "rgba(212,175,55,0.4)" }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(212,175,55,0.9)")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(212,175,55,0.4)")}>
+                  {/* Subtle Gold Glow for secondary */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-500 blur-xl bg-[#d4af37] -z-10" />
+                  View Models
+                </a>
+              </Magnetic>
             </motion.div>
           </motion.div>
         </motion.div>
@@ -321,7 +452,7 @@ export default function HarleyPage() {
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
             viewport={{ once: true, margin: "-10%" }}
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-            className="relative group"
+            className="relative group mb-12"
           >
             {/* Outer gold glow frame */}
             <div className="absolute -inset-1 rounded-[2.5rem] opacity-0 group-hover:opacity-100 transition-opacity duration-500"
@@ -375,11 +506,11 @@ export default function HarleyPage() {
             </motion.div>
           </motion.div>
 
-          {/* 2 secondary smaller videos */}
-          <div className="grid md:grid-cols-2 gap-5 mt-6">
+          {/* Secondary HD Videos */}
+          <div className="grid md:grid-cols-2 gap-8">
             {[
               { youtubeId: "PyQFdn5EmYA", title: "HERITAGE CLASSIC", sub: "The American Legend", chip: "CRUISER" },
-              { youtubeId: "sNpOubHHBuA", title: "SPORTSTER S", sub: "New Era Revolution", chip: "SPORT" },
+              { youtubeId: "sQEgklEwhSo", title: "SPORTSTER S", sub: "New Era Revolution", chip: "SPORT" },
             ].map((v, i) => (
               <motion.div
                 key={v.youtubeId}
@@ -493,19 +624,21 @@ export default function HarleyPage() {
 
                 <div className="flex items-center justify-between">
                   <span className="text-2xl font-display font-black italic text-white">{part.price}</span>
-                  <motion.button 
-                    whileHover={{ scale: 1.05 }} 
-                    whileTap={{ scale: 0.95 }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      showToast(`${part.name} Added to Cart!`, "success");
-                    }}
-                    className="inline-flex items-center gap-2 text-black text-[9px] font-black tracking-widest uppercase px-5 py-2.5 rounded-full transition-all duration-300 cursor-pointer"
-                    style={{ background: "linear-gradient(135deg, #d4af37, #f5d87e)", boxShadow: "0 0 20px rgba(212,175,55,0.0)" }}
-                    onMouseEnter={e => (e.currentTarget.style.boxShadow = "0 0 20px rgba(212,175,55,0.4)")}
-                    onMouseLeave={e => (e.currentTarget.style.boxShadow = "0 0 20px rgba(212,175,55,0.0)")}>
-                    Add to Cart <ArrowRight className="w-3 h-3" />
-                  </motion.button>
+                  <Magnetic>
+                    <motion.button 
+                      whileHover={{ scale: 1.05 }} 
+                      whileTap={{ scale: 0.95 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        showToast(`${part.name} Added to Cart!`, "success");
+                      }}
+                      className="group relative inline-flex items-center gap-2 text-black text-[9px] font-black tracking-widest uppercase px-5 py-2.5 rounded-full transition-all duration-300 cursor-pointer overflow-hidden"
+                      style={{ background: "linear-gradient(135deg, #d4af37, #f5d87e)" }}>
+                      {/* Internal Gold Shimmer */}
+                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl bg-white/30 -z-10" />
+                      Add to Cart <ArrowRight className="w-3 h-3" />
+                    </motion.button>
+                  </Magnetic>
                 </div>
 
                 {/* Corner HUD */}
@@ -541,12 +674,16 @@ export default function HarleyPage() {
               Every bolt. Every chrome piece. Every upgrade. Sourced direct from Harley-Davidson&apos;s
               official parts network — exclusively through ApexMoto.
             </p>
-            <Link href="/#products"
-              className="group inline-flex items-center gap-4 text-black font-display font-black italic uppercase tracking-wider px-12 py-5 text-lg transition-all duration-300"
-              style={{ background: "linear-gradient(135deg, #d4af37, #f5d87e, #d4af37)", boxShadow: "0 0 60px rgba(212,175,55,0.3)" }}>
-              Shop All HD Parts
-              <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-2" />
-            </Link>
+            <Magnetic>
+              <Link href="/#products"
+                className="group relative inline-flex items-center gap-4 text-black font-display font-black italic uppercase tracking-wider px-12 py-5 text-lg transition-all duration-300 overflow-hidden"
+                style={{ background: "linear-gradient(135deg, #d4af37, #f5d87e, #d4af37)" }}>
+                {/* Gold Leaf Glow */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-3xl bg-[#d4af37]/60 -z-10" />
+                Shop All HD Parts
+                <ArrowRight className="w-6 h-6 transition-transform group-hover:translate-x-2" />
+              </Link>
+            </Magnetic>
           </motion.div>
         </div>
 

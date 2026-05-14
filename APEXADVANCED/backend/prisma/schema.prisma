@@ -8,18 +8,19 @@ datasource db {
 }
 
 model Product {
-  id           String   @id
-  name         String
-  brand        String
-  category     String
-  price        Float
-  description  String
-  image        String
-  stock        Int
-  stockStatus  String
-  specs        String   // Stored as JSON string
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id
+  name        String
+  brand       String
+  category    String
+  price       Float
+  description String
+  image       String
+  stock       Int
+  stockStatus String
+  specs       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  stats       String?
 }
 
 model Shop {
@@ -31,7 +32,7 @@ model Shop {
   address   String
   phone     String?
   hours     String?
-  services  String?  // Stored as JSON string
+  services  String?
   rating    Float?   @default(4.5)
   image     String?
   isOpen    Boolean? @default(true)
@@ -44,24 +45,82 @@ model Bike {
   name                 String
   brand                String
   model                String
-  year                 String   // JSON has it as string "2024"
+  year                 String
   basePrice            Float
   image                String
-  stats                String?  // Stored as JSON string
-  compatibleCategories String?  // Stored as JSON string
+  stats                String?
+  compatibleCategories String?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }
 
 model Order {
-  id             String   @id
-  orderNumber    String   @unique
-  customerName   String
-  total          Float
-  status         String
-  items          String?  // Stored as JSON string
-  timeline       String?  // Stored as JSON string
-  trackingNumber String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                String   @id
+  orderNumber       String   @unique
+  customerName      String
+  total             Float
+  status            String
+  items             String?
+  timeline          String?
+  trackingNumber    String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  customerEmail     String?
+  customerId        String?
+  customerPhone     String?
+  estimatedDelivery String?
+  paymentMethod     String?
+  paymentStatus     String?
+  shipping          Float?
+  shippingAddress   String?
+  subtotal          Float?
+  tax               Float?
+}
+
+model GarageBuild {
+  id        String   @id
+  name      String
+  bike      String   // JSON string
+  parts     String   // JSON string
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Telemetry {
+  id        String   @id
+  label     String
+  value     Float
+  unit      String
+  trend     String
+  color     String
+  updatedAt DateTime @updatedAt
+}
+
+model Achievement {
+  id          String    @id
+  title       String
+  description String
+  rarity      String
+  unlockedAt  DateTime?
+  progress    Int       @default(0)
+  updatedAt   DateTime  @updatedAt
+}
+
+model Booking {
+  id        String   @id
+  shopId    String
+  shopName  String
+  service   String
+  date      String
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  type      String   // "order" or "booking"
+  action    String
+  details   String?  // JSON string
+  createdAt DateTime @default(now())
 }

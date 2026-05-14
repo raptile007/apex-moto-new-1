@@ -14,8 +14,8 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     const t1 = setTimeout(() => {
       setDisplayChildren(children);
       setTransitionStage("in");
-    }, 280);
-    const t2 = setTimeout(() => setTransitionStage("idle"), 600);
+    }, 120);
+    const t2 = setTimeout(() => setTransitionStage("idle"), 300);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [pathname]); // eslint-disable-line
 
@@ -36,13 +36,17 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
         )}
       </AnimatePresence>
 
-      {/* Orange flash line at top */}
+      {/* Orange/Gold flash line at top */}
       <AnimatePresence>
         {transitionStage !== "idle" && (
           <motion.div
             key="flash-line"
             className="fixed top-0 left-0 w-full h-[3px] z-[99999] pointer-events-none"
-            style={{ background: "linear-gradient(90deg, transparent, #ff4d00, transparent)" }}
+            style={{ 
+              background: pathname === "/harley" 
+                ? "linear-gradient(90deg, transparent, #d4af37, transparent)" 
+                : "linear-gradient(90deg, transparent, #ff4d00, transparent)" 
+            }}
             initial={{ scaleX: 0, opacity: 1 }}
             animate={{ scaleX: 1, opacity: 1 }}
             exit={{ opacity: 0 }}

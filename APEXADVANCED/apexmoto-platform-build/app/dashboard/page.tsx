@@ -27,13 +27,12 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useStore } from "@/lib/store"
-import { bikes } from "@/lib/data"
 import { useSound } from "@/hooks/use-sound"
 import Image from "next/image"
 
 export default function DashboardPage() {
   const { play } = useSound()
-  const { orders, garage, removeFromGarage } = useStore()
+  const { orders, garage, removeFromGarage, telemetryData, achievements } = useStore()
   const [activeView, setActiveView] = useState("garage")
 
   return (
@@ -229,13 +228,13 @@ export default function DashboardPage() {
                                 </div>
                                 <div>
                                    <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">{order.orderNumber}</p>
-                                   <h4 className="font-display font-black text-lg italic text-white uppercase">{order.items.length} Systems Deployed</h4>
+                                   <h4 className="font-display font-black text-lg italic text-white uppercase">{(order.items?.length || 0)} Systems Deployed</h4>
                                 </div>
                              </div>
                              <div className="text-right flex items-center gap-8">
                                 <div>
                                    <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">VALUATION</p>
-                                   <p className="text-sm font-black italic text-white">${order.total.toFixed(2)}</p>
+                                   <p className="text-sm font-black italic text-white">${(order.total || 0).toFixed(2)}</p>
                                 </div>
                                 <Badge className="bg-apex-orange text-white font-black italic text-[10px] tracking-widest uppercase px-4 py-2 rounded-xl shadow-[0_0_15px_rgba(255,77,0,0.2)]">
                                    {order.status}
@@ -246,6 +245,107 @@ export default function DashboardPage() {
                       )}
                    </motion.div>
                  )}
+
+                 {activeView === "stats" && (
+                   <motion.div
+                     key="stats"
+                     initial={{ opacity: 0, y: 20 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     exit={{ opacity: 0, y: -20 }}
+                     className="grid md:grid-cols-2 gap-6"
+                   >
+                      {telemetryData.map((stat) => (
+                        <div key={stat.label} className="p-8 bg-white/5 border border-white/10 rounded-[2.5rem] relative overflow-hidden group">
+                           <div className={`absolute top-0 right-0 w-32 h-32 bg-${stat.color}/5 blur-3xl -mr-16 -mt-16 transition-all group-hover:bg-${stat.color}/10`} />
+                           
+                           <div className="flex justify-between items-start mb-6">
+                              <div>
+                                 <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-1">{stat.label}</p>
+                                 <div className="flex items-baseline gap-2">
+                                    <h3 className="font-display font-black text-4xl italic text-white uppercase tracking-tighter">{stat.value}</h3>
+                                    <span className={`text-xs font-black text-${stat.color} uppercase`}>{stat.unit}</span>
+                                 </div>
+                              </div>
+                              <div className={`p-3 rounded-xl bg-white/5 border border-white/10 text-${stat.color}`}>
+                                 {stat.trend === "up" ? <Zap className="w-5 h-5" /> : stat.trend === "down" ? <Activity className="w-5 h-5" /> : <Gauge className="w-5 h-5" />}
+                              </div>
+                           </div>
+
+                           <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                              <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: "70%" }}
+                                className={`h-full bg-${stat.color} shadow-[0_0_10px_rgba(255,77,0,0.3)]`}
+                              />
+                           </div>
+                           <div className="flex justify-between mt-3">
+                              <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">SYSTEM_OPTIMAL</span>
+                              <span className="text-[8px] font-black text-neutral-400 uppercase tracking-widest">{stat.trend === "up" ? "TRENDING_POSITIVE" : stat.trend === "down" ? "MAINTENANCE_REQUIRED" : "NOMINAL_STABILITY"}</span>
+                           </div>
+                        </div>
+                      ))}
+                   </motion.div>
+                 )}
+
+                 {activeView === "awards" && (
+                   <motion.div
+                     key="awards"
+                     initial={{ opacity: 0, y: 20 }}
+                     animate={{ opacity: 1, y: 0 }}
+                     exit={{ opacity: 0, y: -20 }}
+                     className="space-y-4"
+                   >
+                       {achievements.map((award) => (
+                         <div key={award.id} className="p-6 bg-white/5 border border-white/10 rounded-[2rem] flex items-center justify-between group relative overflow-hidden">
+                            {award.unlockedAt && (
+                               <div className="absolute inset-0 bg-gradient-to-r from-apex-orange/5 to-transparent pointer-events-none" />
+                            )}
+                            
+                            <div className="flex items-center gap-6 relative z-10">
+                               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center border transition-all ${
+                                 award.unlockedAt 
+                                   ? "bg-apex-orange/20 border-apex-orange/40 text-apex-orange shadow-[0_0_20px_rgba(255,77,0,0.1)]" 
+                                   : "bg-white/5 border-white/10 text-neutral-600"
+                               }`}>
+                                  <Trophy className="w-6 h-6" />
+                               </div>
+                               <div>
+                                  <div className="flex items-center gap-3 mb-1">
+                                     <h4 className={`font-display font-black text-lg italic uppercase ${award.unlockedAt ? "text-white" : "text-neutral-500"}`}>{award.title}</h4>
+                                     <Badge className={`text-[7px] font-black tracking-[0.2em] uppercase border-none ${
+                                       award.rarity === "LEGENDARY" ? "bg-amber-500/20 text-amber-500" : 
+                                       award.rarity === "RARE" ? "bg-blue-500/20 text-blue-500" : 
+                                       "bg-neutral-500/20 text-neutral-500"
+                                     }`}>
+                                        {award.rarity}
+                                     </Badge>
+                                  </div>
+                                  <p className="text-[10px] text-neutral-500 uppercase tracking-wider">{award.description}</p>
+                               </div>
+                            </div>
+
+                            <div className="text-right relative z-10">
+                               {award.unlockedAt ? (
+                                 <div className="space-y-1">
+                                    <p className="text-[8px] font-black text-apex-orange uppercase tracking-[0.2em]">DECODED_AT</p>
+                                    <p className="text-[10px] font-black text-white">{new Date(award.unlockedAt).toLocaleDateString()}</p>
+                                 </div>
+                               ) : (
+                                 <div className="w-32 space-y-2">
+                                    <div className="flex justify-between items-center">
+                                       <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest">PROGRESS</span>
+                                       <span className="text-[8px] font-black text-neutral-400">{award.progress}%</span>
+                                    </div>
+                                    <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                                       <div className="h-full bg-neutral-700" style={{ width: `${award.progress}%` }} />
+                                    </div>
+                                 </div>
+                               )}
+                            </div>
+                         </div>
+                       ))}
+                    </motion.div>
+                  )}
               </AnimatePresence>
            </div>
         </div>

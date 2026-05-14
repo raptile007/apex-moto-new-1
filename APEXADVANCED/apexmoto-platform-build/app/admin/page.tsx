@@ -52,7 +52,7 @@ import { useStore } from "@/lib/store"
 import { type Product, type Shop, type Order, type OrderStatus } from "@/lib/data"
 import { toast } from "sonner"
 
-type Tab = "overview" | "products" | "orders" | "shops" | "residents"
+type Tab = "overview" | "products" | "orders" | "shops" | "residents" | "bookings"
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>("overview")
@@ -63,6 +63,7 @@ export default function AdminPage() {
     { id: "products" as Tab, label: "Products", icon: Package },
     { id: "orders" as Tab, label: "Orders", icon: Truck },
     { id: "shops" as Tab, label: "Shops", icon: MapPin },
+    { id: "bookings" as Tab, label: "Bookings", icon: Clock },
     { id: "residents" as Tab, label: "Residents", icon: Users },
   ]
 
@@ -140,6 +141,7 @@ export default function AdminPage() {
           {activeTab === "products" && <ProductsTab key="products" searchQuery={searchQuery} />}
           {activeTab === "orders" && <OrdersTab key="orders" searchQuery={searchQuery} />}
           {activeTab === "shops" && <ShopsTab key="shops" searchQuery={searchQuery} />}
+          {activeTab === "bookings" && <BookingsTab key="bookings" searchQuery={searchQuery} />}
           {activeTab === "residents" && <ResidentsTab key="residents" searchQuery={searchQuery} />}
         </AnimatePresence>
       </div>
@@ -148,7 +150,18 @@ export default function AdminPage() {
 }
 
 function OverviewTab() {
-  const { products, cart } = useStore()
+  const { products, activities } = useStore()
+
+  const formatTimeAgo = (date: string) => {
+    const now = new Date();
+    const then = new Date(date);
+    const diff = Math.floor((now.getTime() - then.getTime()) / 1000);
+    
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+    return then.toLocaleDateString();
+  };
 
   const stats = [
     { 
@@ -261,26 +274,40 @@ function OverviewTab() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[
-              { action: "New order placed", detail: "Order #1234 - $249.99", time: "2 min ago" },
-              { action: "Stock updated", detail: "Brembo GP4 Caliper", time: "15 min ago" },
-              { action: "New customer registered", detail: "john.rider@email.com", time: "1 hour ago" },
-              { action: "Product added", detail: "520 O-Ring Chain Gold", time: "3 hours ago" },
-            ].map((activity, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-                className="flex items-center justify-between py-3 border-b border-white/5 last:border-0"
-              >
-                <div>
-                  <p className="font-bold text-sm text-white">{activity.action}</p>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">{activity.detail}</p>
-                </div>
-                <span className="text-[10px] font-black tracking-widest text-neutral-600 uppercase">{activity.time}</span>
-              </motion.div>
-            ))}
+            {activities.length > 0 ? (
+              activities.slice(0, 10).map((activity, index) => (
+                <motion.div
+                  key={activity.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="flex items-center justify-between py-3 border-b border-white/5 last:border-0"
+                >
+                  <div>
+                    <p className="font-bold text-sm text-white uppercase tracking-tight italic">
+                      {activity.action}
+                    </p>
+                    {activity.type === 'order' && (
+                      <p className="text-[10px] font-black uppercase tracking-widest text-emerald-500/70">
+                        DIRECT_DEPLOYMENT_LOGGED
+                      </p>
+                    )}
+                    {activity.type === 'booking' && (
+                      <p className="text-[10px] font-black uppercase tracking-widest text-apex-orange/70">
+                        SERVICE_BLUEPRINT_SYNCED
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-black tracking-widest text-neutral-600 uppercase">
+                    {formatTimeAgo(activity.createdAt)}
+                  </span>
+                </motion.div>
+              ))
+            ) : (
+              <div className="py-10 text-center">
+                <p className="text-[10px] font-black tracking-widest text-neutral-600 uppercase">No recent activity detected</p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -369,7 +396,7 @@ function ProductsTab({ searchQuery }: { searchQuery: string }) {
                       </div>
                     </td>
                     <td className="p-6 text-[10px] font-black tracking-widest text-neutral-400 uppercase">{product.category}</td>
-                    <td className="p-6 text-sm font-black italic tracking-tighter text-white uppercase">${product.price.toFixed(2)}</td>
+                    <td className="p-6 text-sm font-black italic tracking-tighter text-white uppercase">${(product.price || 0).toFixed(2)}</td>
                     <td className="p-6">
                       <div className="flex items-center gap-3">
                         <Input
@@ -441,8 +468,8 @@ function ProductsTab({ searchQuery }: { searchQuery: string }) {
         product={editingProduct}
         open={!!editingProduct}
         onClose={() => setEditingProduct(null)}
-        onSave={(product) => {
-          updateProduct(product.id, product)
+        onSave={async (product) => {
+          await updateProduct(product.id, product)
           setEditingProduct(null)
           toast.success("Product updated successfully")
         }}
@@ -452,8 +479,8 @@ function ProductsTab({ searchQuery }: { searchQuery: string }) {
       <ProductDialog
         open={isAddingProduct}
         onClose={() => setIsAddingProduct(false)}
-        onSave={(product) => {
-          addProduct({ ...product, id: `product-${Date.now()}` })
+        onSave={async (product) => {
+          await addProduct({ ...product, id: `product-${Date.now()}` })
           setIsAddingProduct(false)
           toast.success("Product added successfully")
         }}
@@ -744,7 +771,7 @@ function ShopsTab({ searchQuery }: { searchQuery: string }) {
                   </div>
 
                   <div className="pt-6 border-t border-white/5 text-[9px] font-black tracking-widest uppercase text-neutral-600">
-                    COORD_DATA: {shop.lat.toFixed(4)}, {shop.lng.toFixed(4)}
+                    COORD_DATA: {(shop.lat || 0).toFixed(4)}, {(shop.lng || 0).toFixed(4)}
                   </div>
                 </CardContent>
               </Card>
@@ -758,8 +785,8 @@ function ShopsTab({ searchQuery }: { searchQuery: string }) {
         shop={editingShop}
         open={!!editingShop}
         onClose={() => setEditingShop(null)}
-        onSave={(shop) => {
-          updateShop(shop.id, shop)
+        onSave={async (shop) => {
+          await updateShop(shop.id, shop)
           setEditingShop(null)
           toast.success("Shop updated successfully")
         }}
@@ -769,8 +796,8 @@ function ShopsTab({ searchQuery }: { searchQuery: string }) {
       <ShopDialog
         open={isAddingShop}
         onClose={() => setIsAddingShop(false)}
-        onSave={(shop) => {
-          addShop({ ...shop, id: `shop-${Date.now()}` })
+        onSave={async (shop) => {
+          await addShop({ ...shop, id: `shop-${Date.now()}` })
           setIsAddingShop(false)
           toast.success("Shop added successfully")
         }}
@@ -1117,9 +1144,9 @@ function OrdersTab({ searchQuery }: { searchQuery: string }) {
     return matchesSearch && matchesStatus
   })
 
-  const handleUpdateStatus = () => {
+  const handleUpdateStatus = async () => {
     if (selectedOrder && newStatus) {
-      updateOrderStatus(selectedOrder.id, newStatus, trackingNumber || undefined)
+      await updateOrderStatus(selectedOrder.id, newStatus, trackingNumber || undefined)
       toast.success(`Order ${selectedOrder.orderNumber} updated to ${orderStatusConfig[newStatus].label}`)
       setSelectedOrder(null)
       setNewStatus("")
@@ -1248,7 +1275,7 @@ function OrdersTab({ searchQuery }: { searchQuery: string }) {
                         {order.items.length} item{order.items.length > 1 ? "s" : ""}
                       </td>
                       <td className="p-6">
-                        <p className="font-display font-black text-sm italic text-white">${order.total.toFixed(2)}</p>
+                        <p className="font-display font-black text-sm italic text-white">${(order.total || 0).toFixed(2)}</p>
                       </td>
                       <td className="p-6">
                         <Badge className={`font-black italic text-[9px] tracking-widest uppercase px-3 py-1 rounded-full ${statusConfig.bgColor} ${statusConfig.color} border-0`}>
@@ -1368,6 +1395,110 @@ function OrdersTab({ searchQuery }: { searchQuery: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </motion.div>
+  )
+}
+
+function BookingsTab({ searchQuery }: { searchQuery: string }) {
+  const { bookings } = useStore()
+  
+  const filteredBookings = (bookings || []).filter(b => 
+    b.shopName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    b.service.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className="space-y-6"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-display font-black italic uppercase tracking-tighter text-white">
+            SERVICE <span className="text-apex-orange">APPOINTMENTS</span>
+          </h2>
+          <p className="text-[10px] font-black tracking-[0.2em] text-neutral-500 uppercase mt-1">
+            {filteredBookings.length} ACTIVE RESERVATIONS
+          </p>
+        </div>
+      </div>
+
+      <Card className="bg-white/5 border-white/10 overflow-hidden rounded-3xl">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-white/5 border-b border-white/5">
+              <tr>
+                <th className="text-left p-6 text-[10px] font-black tracking-widest text-neutral-500 uppercase">ID</th>
+                <th className="text-left p-6 text-[10px] font-black tracking-widest text-neutral-500 uppercase">HUB</th>
+                <th className="text-left p-6 text-[10px] font-black tracking-widest text-neutral-500 uppercase">SERVICE</th>
+                <th className="text-left p-6 text-[10px] font-black tracking-widest text-neutral-500 uppercase">APPOINTMENT_DATE</th>
+                <th className="text-left p-6 text-[10px] font-black tracking-widest text-neutral-500 uppercase">STATUS</th>
+                <th className="text-right p-6 text-[10px] font-black tracking-widest text-neutral-500 uppercase">CREATED_AT</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              <AnimatePresence>
+                {filteredBookings.map((booking, index) => (
+                  <motion.tr
+                    key={booking.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.02 }}
+                    className="group hover:bg-white/5 transition-colors"
+                  >
+                    <td className="p-6">
+                      <p className="font-display font-black text-xs italic uppercase tracking-tight text-apex-orange">{booking.id}</p>
+                    </td>
+                    <td className="p-6">
+                      <p className="font-bold text-sm text-white uppercase">{booking.shopName}</p>
+                    </td>
+                    <td className="p-6">
+                      <Badge className="bg-white/5 text-neutral-300 border-white/10 text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                        {booking.service}
+                      </Badge>
+                    </td>
+                    <td className="p-6">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3 h-3 text-apex-orange" />
+                        <p className="text-xs font-black text-white uppercase italic">
+                          {new Date(booking.date).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    </td>
+                    <td className="p-6">
+                      <Badge className={`font-black italic text-[9px] tracking-widest uppercase px-3 py-1 rounded-full ${
+                        booking.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-500' : 
+                        booking.status === 'pending' ? 'bg-yellow-500/10 text-yellow-500' : 
+                        'bg-neutral-500/10 text-neutral-500'
+                      } border-0`}>
+                        {booking.status}
+                      </Badge>
+                    </td>
+                    <td className="p-6 text-right text-[10px] font-black tracking-widest text-neutral-500 uppercase">
+                      {new Date(booking.createdAt).toLocaleDateString('en-IN', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </td>
+                  </motion.tr>
+                ))}
+              </AnimatePresence>
+            </tbody>
+          </table>
+          {filteredBookings.length === 0 && (
+            <div className="p-20 text-center">
+              <Clock className="w-12 h-12 text-neutral-700 mx-auto mb-4" />
+              <p className="text-[10px] font-black tracking-[0.2em] text-neutral-500 uppercase">NO APPOINTMENTS RECORDED</p>
+            </div>
+          )}
+        </div>
+      </Card>
     </motion.div>
   )
 }

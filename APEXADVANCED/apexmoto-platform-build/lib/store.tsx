@@ -6,15 +6,18 @@ import { allProducts as initialProducts, shops as initialShops, sampleOrders, ch
 type StoreContextType = {
   // Products
   products: Product[]
-  updateProduct: (id: string, updates: Partial<Product>) => void
-  deleteProduct: (id: string) => void
-  addProduct: (product: Product) => void
+  updateProduct: (id: string, updates: Partial<Product>) => Promise<void>
+  deleteProduct: (id: string) => Promise<void>
+  addProduct: (product: Product) => Promise<void>
   
   // Shops
   shops: Shop[]
-  updateShop: (id: string, updates: Partial<Shop>) => void
-  deleteShop: (id: string) => void
-  addShop: (shop: Shop) => void
+  updateShop: (id: string, updates: Partial<Shop>) => Promise<void>
+  deleteShop: (id: string) => Promise<void>
+  addShop: (shop: Shop) => Promise<void>
+
+  // Bikes
+  bikes: any[]
   
   // Cart
   cart: CartItem[]
@@ -42,6 +45,7 @@ type StoreContextType = {
   filteredProducts: Product[]
   
   // UI State
+  isLoading: boolean
   isCartOpen: boolean
   setIsCartOpen: (open: boolean) => void
   selectedProduct: Product | null
@@ -54,17 +58,19 @@ type StoreContextType = {
   
   // Orders
   orders: Order[]
-  addOrder: (order: Order) => void
-  updateOrderStatus: (orderId: string, status: OrderStatus, trackingNumber?: string) => void
+  addOrder: (order: Order) => Promise<void>
+  updateOrderStatus: (orderId: string, status: OrderStatus, trackingNumber?: string) => Promise<void>
   getOrderByNumber: (orderNumber: string) => Order | undefined
   
   // Garage (Saved Builds)
   garage: { id: string; name: string; bike: any; parts: Record<string, Product>; createdAt: string }[]
-  saveToGarage: (name: string, bike: any, parts: Record<string, Product>) => void
-  removeFromGarage: (id: string) => void
+  saveToGarage: (name: string, bike: any, parts: Record<string, Product>) => Promise<void>
+  removeFromGarage: (id: string) => Promise<void>
 
-  // Compatibility
-  cartCompatibility: { isCompatible: boolean; warnings: string[] }
+  // Resident Data
+  telemetryData: any[]
+  achievements: any[]
+  activities: any[]
 }
 
 const StoreContext = createContext<StoreContextType | null>(null)
@@ -86,9 +92,10 @@ function getStatusDescription(status: OrderStatus): string {
 export function StoreProvider({ children }: { children: ReactNode }) {
   // Products state
   const [products, setProducts] = useState<Product[]>(initialProducts)
-  
-  // Shops state
   const [shops, setShops] = useState<Shop[]>(initialShops)
+  const [bikes, setBikes] = useState<any[]>([])
+  const [orders, setOrders] = useState<Order[]>(sampleOrders)
+  const [isLoading, setIsLoading] = useState(true)
   
   // Cart state
   const [cart, setCart] = useState<CartItem[]>([])
@@ -108,18 +115,135 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [selectedParts, setSelectedParts] = useState<Record<string, Product>>({})
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false)
   
-  // Orders state
-  const [orders, setOrders] = useState<Order[]>(sampleOrders)
-  
   // Garage state
   const [garage, setGarage] = useState<{ id: string; name: string; bike: any; parts: Record<string, Product>; createdAt: string }[]>([])
   
+  // Resident state
+  const [telemetryData, setTelemetryData] = useState<any[]>([])
+  // Achievement state
+  const [achievements, setAchievements] = useState<any[]>([])
+  
+  // Booking state
+  const [bookings, setBookings] = useState<any[]>([])
+  
+  // Activity state
+  const [activities, setActivities] = useState<any[]>([])
+  
+  // Fetch data from backend
+  useEffect(() => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+
+    async function fetchAll() {
+      setIsLoading(true);
+      console.log('🔄 Synchronizing with ApexMoto Backend...');
+      try {
+        const fetchOptions = { cache: 'no-store' as RequestCache };
+        const [prodRes, shopRes, bikeRes, orderRes, garageRes, bookingsRes, activitiesRes, statRes, awardRes] = await Promise.all([
+          fetch(`${API_BASE}/api/products`, fetchOptions),
+          fetch(`${API_BASE}/api/shops`, fetchOptions),
+          fetch(`${API_BASE}/api/bikes`, fetchOptions),
+          fetch(`${API_BASE}/api/orders`, fetchOptions),
+          fetch(`${API_BASE}/api/garage`, fetchOptions),
+          fetch(`${API_BASE}/api/bookings`, fetchOptions),
+          fetch(`${API_BASE}/api/activities`, fetchOptions),
+          fetch(`${API_BASE}/api/resident/stats`, fetchOptions),
+          fetch(`${API_BASE}/api/resident/achievements`, fetchOptions)
+        ]);
+
+        const safeParse = (str: any) => {
+          if (!str || typeof str !== 'string') return str;
+          try { return JSON.parse(str); } catch { return str; }
+        };
+
+        const ensureArray = (val: any) => {
+          const parsed = safeParse(val);
+          if (Array.isArray(parsed)) return parsed;
+          if (!parsed) return [];
+          return [parsed];
+        };
+
+        if (prodRes.ok) {
+          const data = await prodRes.json();
+          setProducts(data.map((p: any) => ({
+            ...p,
+            specs: safeParse(p.specs) || {},
+            stats: safeParse(p.stats) || {}
+          })));
+          console.log(`📦 Loaded ${data.length} products`);
+        }
+        
+        if (shopRes.ok) {
+          const data = await shopRes.json();
+          setShops(data.map((s: any) => ({
+            ...s,
+            services: ensureArray(s.services)
+          })));
+          console.log(`🏪 Loaded ${data.length} shops`);
+        }
+        
+        if (bikeRes.ok) {
+          const data = await bikeRes.json();
+          setBikes(data.map((b: any) => ({
+            ...b,
+            stats: safeParse(b.stats) || {},
+            compatibleCategories: ensureArray(b.compatibleCategories)
+          })));
+          console.log(`🏍️ Loaded ${data.length} bikes`);
+        }
+        
+        if (orderRes.ok) {
+          const data = await orderRes.json();
+          setOrders(data.map((o: any) => ({
+            ...o,
+            items: ensureArray(o.items),
+            timeline: ensureArray(o.timeline),
+            shippingAddress: safeParse(o.shippingAddress) || {}
+          })));
+          console.log(`📋 Loaded ${data.length} orders`);
+        }
+        
+        if (garageRes.ok) {
+          const data = await garageRes.json();
+          setGarage(data.map((g: any) => ({
+            ...g,
+            bike: safeParse(g.bike) || {},
+            parts: safeParse(g.parts) || {}
+          })));
+          console.log(`🛠️ Loaded ${data.length} garage builds`);
+        }
+
+        if (bookingsRes.ok) {
+          const data = await bookingsRes.json();
+          setBookings(data);
+          console.log(`📅 Loaded ${data.length} bookings`);
+        }
+
+        if (activitiesRes.ok) {
+          const data = await activitiesRes.json();
+          setActivities(data);
+          console.log(`📡 Loaded ${data.length} activities`);
+        }
+        
+        if (statRes.ok) setTelemetryData(await statRes.json());
+        if (awardRes.ok) setAchievements(await awardRes.json());
+        
+        console.log('✅ Backend synchronization complete');
+      } catch (err) {
+        console.error('❌ Backend synchronization failed:', err);
+        console.warn('⚠️ Using local fallback data');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchAll();
+  }, [])
+
   // Hydration from localStorage
   useEffect(() => {
     const savedCart = localStorage.getItem("apexmoto_cart")
     const savedWishlist = localStorage.getItem("apexmoto_wishlist")
     const savedParts = localStorage.getItem("apexmoto_selected_parts")
-    const savedGarage = localStorage.getItem("apexmoto_garage")
 
     if (savedCart) {
       try {
@@ -142,13 +266,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         console.error("Failed to parse selected parts", e)
       }
     }
-    if (savedGarage) {
-      try {
-        setGarage(JSON.parse(savedGarage))
-      } catch (e) {
-        console.error("Failed to parse garage", e)
-      }
-    }
   }, [])
 
   // Persistence to localStorage
@@ -163,35 +280,105 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem("apexmoto_selected_parts", JSON.stringify(selectedParts))
   }, [selectedParts])
-
-  useEffect(() => {
-    localStorage.setItem("apexmoto_garage", JSON.stringify(garage))
-  }, [garage])
   
   // Product handlers
-  const updateProduct = useCallback((id: string, updates: Partial<Product>) => {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p))
+  const updateProduct = useCallback(async (id: string, updates: Partial<Product>) => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+    try {
+      const res = await fetch(`${API_BASE}/api/products/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setProducts(prev => prev.map(p => p.id === id ? updated : p));
+      }
+    } catch (err) {
+      console.error('Failed to update product', err);
+      setProducts(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
+    }
   }, [])
   
-  const deleteProduct = useCallback((id: string) => {
-    setProducts(prev => prev.filter(p => p.id !== id))
+  const deleteProduct = useCallback(async (id: string) => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+    try {
+      const res = await fetch(`${API_BASE}/api/products/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setProducts(prev => prev.filter(p => p.id !== id));
+      }
+    } catch (err) {
+      console.error('Failed to delete product', err);
+      setProducts(prev => prev.filter(p => p.id !== id));
+    }
   }, [])
   
-  const addProduct = useCallback((product: Product) => {
-    setProducts(prev => [...prev, product])
+  const addProduct = useCallback(async (product: Product) => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+    try {
+      const res = await fetch(`${API_BASE}/api/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(product)
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setProducts(prev => [...prev, created]);
+      }
+    } catch (err) {
+      console.error('Failed to add product', err);
+      setProducts(prev => [...prev, product]);
+    }
   }, [])
   
   // Shop handlers
-  const updateShop = useCallback((id: string, updates: Partial<Shop>) => {
-    setShops(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s))
+  const updateShop = useCallback(async (id: string, updates: Partial<Shop>) => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+    try {
+      const res = await fetch(`${API_BASE}/api/shops/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setShops(prev => prev.map(s => s.id === id ? updated : s));
+      }
+    } catch (err) {
+      console.error('Failed to update shop', err);
+      setShops(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
+    }
   }, [])
   
-  const deleteShop = useCallback((id: string) => {
-    setShops(prev => prev.filter(s => s.id !== id))
+  const deleteShop = useCallback(async (id: string) => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+    try {
+      const res = await fetch(`${API_BASE}/api/shops/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setShops(prev => prev.filter(s => s.id !== id));
+      }
+    } catch (err) {
+      console.error('Failed to delete shop', err);
+      setShops(prev => prev.filter(s => s.id !== id));
+    }
   }, [])
   
-  const addShop = useCallback((shop: Shop) => {
-    setShops(prev => [...prev, shop])
+  const addShop = useCallback(async (shop: Shop) => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+    try {
+      const res = await fetch(`${API_BASE}/api/shops`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(shop)
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setShops(prev => [...prev, created]);
+      }
+    } catch (err) {
+      console.error('Failed to add shop', err);
+      setShops(prev => [...prev, shop]);
+    }
   }, [])
   
   // Cart handlers
@@ -235,51 +422,129 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const cartCompatibility = checkBrandCompatibility(cart)
   
   // Order handlers
-  const addOrder = useCallback((order: Order) => {
-    setOrders(prev => [order, ...prev])
+  const addOrder = useCallback(async (order: Order) => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+    try {
+      const res = await fetch(`${API_BASE}/api/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(order)
+      });
+      
+      if (res.ok) {
+        const savedOrder = await res.json();
+        setOrders(prev => [savedOrder, ...prev]);
+        console.log('✅ Order synced with backend');
+      } else {
+        const error = await res.json();
+        console.error('❌ Backend order creation failed:', error);
+        // Fallback to local state
+        setOrders(prev => [order, ...prev]);
+      }
+    } catch (err) {
+      console.warn('⚠️ Backend not reachable, order saved locally only', err);
+      setOrders(prev => [order, ...prev]);
+    }
   }, [])
   
-  const updateOrderStatus = useCallback((orderId: string, status: OrderStatus, trackingNumber?: string) => {
-    setOrders(prev => prev.map(order => {
-      if (order.id === orderId) {
-        const newTimeline = [...order.timeline, {
-          status,
-          timestamp: new Date().toISOString(),
-          description: getStatusDescription(status),
-        }]
-        return { 
-          ...order, 
-          status, 
-          timeline: newTimeline,
-          trackingNumber: trackingNumber || order.trackingNumber,
-          updatedAt: new Date().toISOString()
-        }
+  const updateOrderStatus = useCallback(async (orderId: string, status: OrderStatus, trackingNumber?: string) => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    const newTimeline = [...order.timeline, {
+      status,
+      timestamp: new Date().toISOString(),
+      description: getStatusDescription(status),
+    }];
+
+    const updates = { 
+      status, 
+      timeline: newTimeline,
+      trackingNumber: trackingNumber || order.trackingNumber,
+      updatedAt: new Date().toISOString()
+    };
+
+    try {
+      const res = await fetch(`${API_BASE}/api/orders/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setOrders(prev => prev.map(o => o.id === orderId ? updated : o));
       }
-      return order
-    }))
-  }, [])
+    } catch (err) {
+      console.error('Failed to update order status', err);
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, ...updates } : o));
+    }
+  }, [orders])
   
   const getOrderByNumber = useCallback((orderNumber: string) => {
     return orders.find(o => o.orderNumber === orderNumber)
   }, [orders])
 
   // Garage handlers
-  const saveToGarage = useCallback((name: string, bike: any, parts: Record<string, Product>) => {
-    setGarage(prev => [
-      {
-        id: Math.random().toString(36).substring(2, 9),
-        name,
-        bike,
-        parts,
-        createdAt: new Date().toISOString()
-      },
-      ...prev
-    ])
-  }, [])
+  const saveToGarage = useCallback(async (name: string, bike: any, parts: Record<string, Product>) => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+    const newBuild = {
+      id: `build-${Date.now()}`,
+      name,
+      bike,
+      parts,
+      createdAt: new Date().toISOString()
+    };
+    
+    try {
+      const res = await fetch(`${API_BASE}/api/garage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newBuild)
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        setGarage(prev => [...prev, saved]);
+      }
+    } catch (err) {
+      console.error('Failed to save to garage', err);
+      setGarage(prev => [...prev, newBuild]);
+    }
+  }, []);
+  
+  const removeFromGarage = useCallback(async (id: string) => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+    try {
+      const res = await fetch(`${API_BASE}/api/garage/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setGarage(prev => prev.filter(g => g.id !== id));
+      }
+    } catch (err) {
+      console.error('Failed to remove from garage', err);
+      setGarage(prev => prev.filter(g => g.id !== id));
+    }
+  }, []);
 
-  const removeFromGarage = useCallback((id: string) => {
-    setGarage(prev => prev.filter(item => item.id !== id))
-  }, [])
+  // Booking handlers
+  const addBooking = useCallback(async (booking: any) => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+    try {
+      const res = await fetch(`${API_BASE}/api/bookings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(booking)
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        setBookings(prev => [saved, ...prev]);
+        return saved;
+      }
+    } catch (err) {
+      console.error('Failed to add booking', err);
+      setBookings(prev => [booking, ...prev]);
+      return booking;
+    }
+  }, []);
   
   // Wishlist handlers
   const toggleWishlist = useCallback((productId: string) => {
@@ -315,6 +580,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateShop,
       deleteShop,
       addShop,
+      bikes,
       cart,
       addToCart,
       removeFromCart,
@@ -334,6 +600,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       priceRange,
       setPriceRange,
       filteredProducts,
+      isLoading,
       isCartOpen,
       setIsCartOpen,
       selectedProduct,
@@ -349,7 +616,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       garage,
       saveToGarage,
       removeFromGarage,
+      bookings,
+      addBooking,
+      activities,
       cartCompatibility,
+      telemetryData,
+      achievements,
     }}>
       {children}
     </StoreContext.Provider>

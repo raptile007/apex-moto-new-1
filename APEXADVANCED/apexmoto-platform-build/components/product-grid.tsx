@@ -20,16 +20,18 @@ export function ProductGrid() {
     setSelectedCategory,
     selectedBrand,
     setSelectedBrand,
-    searchQuery
+    searchQuery,
+    isLoading: storeLoading
   } = useStore()
 
   const [isLoading, setIsLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1200)
-    return () => clearTimeout(timer)
-  }, [])
+    if (!storeLoading) {
+      setIsLoading(false)
+    }
+  }, [storeLoading])
 
   const activeFiltersCount = [selectedCategory, selectedBrand].filter(Boolean).length
 

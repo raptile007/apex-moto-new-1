@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
+import { usePathname } from "next/navigation";
 
 const BOOT_LINES = [
   { text: "APEX_CORE v4.7.0 — SYSTEM INITIALIZATION", status: "OK" },
@@ -13,8 +14,18 @@ const BOOT_LINES = [
   { text: "APEX_MOTO — ALL SYSTEMS READY", status: "ARMED" },
 ];
 
+const HD_BOOT_LINES = [
+  { text: "MILWAUKEE-EIGHT® DIAGNOSTICS", status: "OK" },
+  { text: "IGNITION COIL VOLTAGE CHECK", status: "OK" },
+  { text: "PRIMARY DRIVE TENSION CALIBRATION", status: "OK" },
+  { text: "FUEL INJECTION MAP LOADING", status: "OK" },
+  { text: "THROTTLE BY WIRE RESPONSE", status: "OK" },
+  { text: "EXHAUST VALVE ACTUATION", status: "GO" },
+  { text: "HARLEY-DAVIDSON — THUNDER READY", status: "GO" },
+];
+
 // Radial arc SVG for the speedometer needle
-function NeedleGauge({ progress }: { progress: number }) {
+function NeedleGauge({ progress, color = "#ff4d00" }: { progress: number; color?: string }) {
   const r = 90;
   const cx = 110;
   const cy = 110;
@@ -43,7 +54,7 @@ function NeedleGauge({ progress }: { progress: number }) {
 
   const isHot = progress > 75;
   const isWarm = progress > 45;
-  const progressColor = isHot ? "#ff4d00" : isWarm ? "#ffaa00" : "#ffffff";
+  const progressColor = color !== "#ff4d00" ? color : (isHot ? "#ff4d00" : isWarm ? "#ffaa00" : "#ffffff");
 
   return (
     <svg width="220" height="160" viewBox="0 0 220 160">
@@ -126,6 +137,9 @@ function NeedleGauge({ progress }: { progress: number }) {
 }
 
 export function InitialLoader() {
+  const pathname = usePathname();
+  const isHarleyPage = pathname === "/harley";
+  
   const [visible, setVisible] = useState(true);
   const [progress, setProgress] = useState(0);
   const [rpm, setRpm] = useState(0);
@@ -149,7 +163,7 @@ export function InitialLoader() {
   useEffect(() => {
     let frame: number;
     let startTime: number | null = null;
-    const duration = 2800;
+    const duration = 1200;
 
     const tick = (now: number) => {
       if (!startTime) startTime = now;
@@ -162,8 +176,8 @@ export function InitialLoader() {
       if (t < 1) {
         frame = requestAnimationFrame(tick);
       } else {
-        setTimeout(() => setExiting(true), 600);
-        setTimeout(() => setVisible(false), 1400);
+        setTimeout(() => setExiting(true), 200);
+        setTimeout(() => setVisible(false), 600);
       }
     };
     frame = requestAnimationFrame(tick);
@@ -177,7 +191,7 @@ export function InitialLoader() {
       setBootLine(i);
       i++;
       if (i >= BOOT_LINES.length) clearInterval(interval);
-    }, 380);
+    }, 150);
     return () => clearInterval(interval);
   }, []);
 
@@ -226,7 +240,7 @@ export function InitialLoader() {
           ].map((cls, i) => (
             <motion.div
               key={i}
-              className={`absolute w-8 h-8 border-apex-orange/40 ${cls}`}
+              className={`absolute w-8 h-8 ${isHarleyPage ? "border-[#d4af37]/40" : "border-apex-orange/40"} ${cls}`}
               initial={{ opacity: 0, scale: 1.5 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.1 * i }}
@@ -245,28 +259,44 @@ export function InitialLoader() {
             >
               <div className="flex items-center gap-3 mb-1">
                 <motion.div
-                  className="h-px bg-apex-orange/60"
+                  className={`h-px ${isHarleyPage ? "bg-[#d4af37]/60" : "bg-apex-orange/60"}`}
                   initial={{ width: 0 }}
                   animate={{ width: 48 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
                 />
-                <span className="text-[9px] tracking-[0.6em] text-apex-orange font-bold uppercase font-display">
-                  ApexMoto
+                <span className={`text-[9px] tracking-[0.6em] ${isHarleyPage ? "text-[#d4af37]" : "text-apex-orange"} font-bold uppercase font-display`}>
+                  {isHarleyPage ? "ApexMoto x Harley" : "ApexMoto"}
                 </span>
                 <motion.div
-                  className="h-px bg-apex-orange/60"
+                  className={`h-px ${isHarleyPage ? "bg-[#d4af37]/60" : "bg-apex-orange/60"}`}
                   initial={{ width: 0 }}
                   animate={{ width: 48 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
                 />
               </div>
               <h1 className="text-6xl md:text-8xl font-display font-black text-white tracking-tighter uppercase italic leading-none">
-                APEX
+                {isHarleyPage ? "THUNDER" : "APEX"}
               </h1>
               <p className="text-[10px] text-neutral-600 font-mono tracking-[0.4em] uppercase mt-1">
-                Performance Engineering Suite
+                {isHarleyPage ? "American V-Twin Diagnostics" : "Performance Engineering Suite"}
               </p>
             </motion.div>
+
+            {/* V-Twin Pistons (Harley Only) */}
+            {isHarleyPage && (
+              <div className="flex gap-12 -mb-4">
+                 <motion.div 
+                    animate={{ y: [0, -20, 0] }}
+                    transition={{ duration: 0.4, repeat: Infinity, ease: "easeInOut" }}
+                    className="w-12 h-16 bg-[#d4af37]/20 border border-[#d4af37]/40 rounded-lg"
+                 />
+                 <motion.div 
+                    animate={{ y: [-20, 0, -20] }}
+                    transition={{ duration: 0.4, repeat: Infinity, ease: "easeInOut" }}
+                    className="w-12 h-16 bg-[#d4af37]/20 border border-[#d4af37]/40 rounded-lg"
+                 />
+              </div>
+            )}
 
             {/* Gauge + RPM */}
             <motion.div
@@ -275,13 +305,13 @@ export function InitialLoader() {
               transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
               className="flex flex-col items-center gap-2"
             >
-              <NeedleGauge progress={progress} />
+              <NeedleGauge progress={progress} color={isHarleyPage ? "#d4af37" : undefined} />
               <div className="flex items-end gap-2 -mt-4">
                 <motion.span
                   className="text-5xl font-mono font-black tabular-nums leading-none"
                   style={{
-                    color: rpmColor,
-                    textShadow: isHot ? `0 0 24px ${rpmColor}` : "none",
+                    color: isHarleyPage ? "#d4af37" : rpmColor,
+                    textShadow: isHarleyPage || isHot ? `0 0 24px ${isHarleyPage ? "#d4af37" : rpmColor}` : "none",
                     transition: "color 0.12s, text-shadow 0.12s",
                   }}
                 >
@@ -312,10 +342,10 @@ export function InitialLoader() {
                       className="flex-1 h-[6px] rounded-sm transition-all duration-75"
                       style={{
                         backgroundColor: isActive
-                          ? hot ? "#ff4d00" : warm ? "#ffaa00" : "#fff"
+                          ? isHarleyPage ? "#d4af37" : (hot ? "#ff4d00" : warm ? "#ffaa00" : "#fff")
                           : "rgba(255,255,255,0.07)",
-                        boxShadow: isActive && hot
-                          ? "0 0 8px rgba(255,77,0,0.7)"
+                        boxShadow: isActive && (isHarleyPage || hot)
+                          ? `0 0 8px ${isHarleyPage ? "#d4af37" : "#ff4d00"}`
                           : "none",
                       }}
                     />
@@ -324,9 +354,9 @@ export function InitialLoader() {
               </div>
               <div className="flex justify-between">
                 <span className="text-[9px] font-mono text-neutral-700 uppercase tracking-widest">
-                  BOOT SEQUENCE
+                  {isHarleyPage ? "IGNITION_SEQUENCE" : "BOOT SEQUENCE"}
                 </span>
-                <span className="text-[9px] font-mono font-bold" style={{ color: rpmColor }}>
+                <span className="text-[9px] font-mono font-bold" style={{ color: isHarleyPage ? "#d4af37" : rpmColor }}>
                   {progress}%
                 </span>
               </div>
@@ -339,7 +369,7 @@ export function InitialLoader() {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="w-full bg-white/[0.025] border border-white/[0.05] rounded-2xl p-4 font-mono text-[9px] min-h-[90px] flex flex-col gap-[5px] overflow-hidden"
             >
-              {BOOT_LINES.slice(0, bootLine + 1).map((line, i) => (
+              {(isHarleyPage ? HD_BOOT_LINES : BOOT_LINES).slice(0, bootLine + 1).map((line, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, x: -12 }}
@@ -347,15 +377,15 @@ export function InitialLoader() {
                   transition={{ duration: 0.2 }}
                   className="flex items-center gap-2"
                 >
-                  <span className="text-apex-orange shrink-0">▶</span>
+                  <span className={isHarleyPage ? "text-[#d4af37] shrink-0" : "text-apex-orange shrink-0"}>▶</span>
                   <span className={i === bootLine ? "text-white/70" : "text-neutral-700 line-through"}>
                     {line.text}
                   </span>
                   {i < bootLine && (
                     <span className="ml-auto text-emerald-500 shrink-0">[ {line.status} ]</span>
                   )}
-                  {i === bootLine && i === BOOT_LINES.length - 1 && (
-                    <span className="ml-auto text-apex-orange shrink-0 animate-pulse">
+                  {i === bootLine && i === (isHarleyPage ? HD_BOOT_LINES : BOOT_LINES).length - 1 && (
+                    <span className={`ml-auto ${isHarleyPage ? "text-[#d4af37]" : "text-apex-orange"} shrink-0 animate-pulse`}>
                       [ {line.status} ]
                     </span>
                   )}
@@ -363,7 +393,7 @@ export function InitialLoader() {
               ))}
               {/* Blinking caret */}
               <motion.span
-                className="w-[7px] h-[11px] bg-apex-orange inline-block ml-5 mt-[2px]"
+                className={`w-[7px] h-[11px] ${isHarleyPage ? "bg-[#d4af37]" : "bg-apex-orange"} inline-block ml-5 mt-[2px]`}
                 animate={{ opacity: [1, 0] }}
                 transition={{ duration: 0.55, repeat: Infinity }}
               />
@@ -372,10 +402,10 @@ export function InitialLoader() {
 
           {/* Bottom progress bar */}
           <div
-            className="absolute bottom-0 left-0 h-[3px] bg-apex-orange transition-all duration-75"
+            className={`absolute bottom-0 left-0 h-[3px] ${isHarleyPage ? "bg-[#d4af37]" : "bg-apex-orange"} transition-all duration-75`}
             style={{
               width: `${progress}%`,
-              boxShadow: isHot ? "0 0 12px #ff4d00" : "none",
+              boxShadow: isHarleyPage || isHot ? `0 0 12px ${isHarleyPage ? "#d4af37" : "#ff4d00"}` : "none",
             }}
           />
         </motion.div>
